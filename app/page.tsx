@@ -127,6 +127,7 @@ export default function Home() {
         <button className={active==='outputs'?'nav active':'nav'} onClick={()=>setActive('outputs')}>Outputs</button>
         <button className={active==='chat'?'nav active':'nav'} onClick={()=>setActive('chat')}>Chat</button>
       </nav>
+      <div className="accountLinks"><a href="/login">Sign in</a><a className="accountCta" href="/signup">Create account</a></div>
       <div className="status"><i className={comfy==='connected'?'online':''}/>{comfy==='connected'?'ComfyUI connected':comfy==='offline'?'ComfyUI offline':'Checking ComfyUI…'}</div>
     </header>
 
