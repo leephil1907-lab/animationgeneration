@@ -1,7 +1,7 @@
 export type CharacterProfile = { name:string; role?:string; age?:string; style?:string; traits?:string; notes?:string };
 export type WorkflowMode = 'image'|'video';
 export type GenerationSettings = {
-  checkpoint?:string; width?:number; height?:number; steps?:number; cfg?:number; seed?:number;
+  checkpoint?:string; lora?:string; loraStrength?:number; width?:number; height?:number; steps?:number; cfg?:number; seed?:number;
   sampler?:string; scheduler?:string; denoise?:number; batchSize?:number; negativePrompt?:string;
 };
 
@@ -12,23 +12,18 @@ export function buildCharacterPrompt(character: CharacterProfile, scene: string)
 const clamp=(n:number,min:number,max:number)=>Math.min(max,Math.max(min,n));
 export function normalizeSettings(s:GenerationSettings={}): Required<GenerationSettings>{
   return {
-    checkpoint:s.checkpoint||process.env.COMFYUI_CHECKPOINT||'',
-    width:clamp(Math.round(s.width||768),256,1536),
-    height:clamp(Math.round(s.height||1024),256,1536),
-    steps:clamp(Math.round(s.steps||28),1,80),
-    cfg:clamp(Number(s.cfg??7),1,20),
+    checkpoint:s.checkpoint||process.env.COMFYUI_CHECKPOINT||'', lora:s.lora||'', loraStrength:clamp(Number(s.loraStrength??0.8),0,2),
+    width:clamp(Math.round(s.width||768),256,1536), height:clamp(Math.round(s.height||1024),256,1536),
+    steps:clamp(Math.round(s.steps||28),1,80), cfg:clamp(Number(s.cfg??7),1,20),
     seed:Number.isFinite(Number(s.seed))?Math.abs(Math.floor(Number(s.seed))):Math.floor(Math.random()*2147483647),
-    sampler:s.sampler||'euler',
-    scheduler:s.scheduler||'normal',
-    denoise:clamp(Number(s.denoise??0.65),0,1),
+    sampler:s.sampler||'euler', scheduler:s.scheduler||'normal', denoise:clamp(Number(s.denoise??0.65),0,1),
     batchSize:clamp(Math.round(s.batchSize||1),1,4),
     negativePrompt:s.negativePrompt||'low quality, distorted anatomy, duplicate subject, inconsistent character identity, unreadable text'
   };
 }
 
 export function buildWorkflow(character:CharacterProfile,scene:string,mode:WorkflowMode,referenceFilename?:string,rawSettings:GenerationSettings={}) {
-  const positive=buildCharacterPrompt(character,scene);
-  const settings=normalizeSettings(rawSettings);
+  const positive=buildCharacterPrompt(character,scene); const settings=normalizeSettings(rawSettings);
   if(mode==='image') {
     const graph:any={
       '4':{class_type:'CheckpointLoaderSimple',inputs:{ckpt_name:settings.checkpoint}},
@@ -39,11 +34,14 @@ export function buildWorkflow(character:CharacterProfile,scene:string,mode:Workf
       '9':{class_type:'VAEDecode',inputs:{samples:['8',0],vae:['4',2]}},
       '10':{class_type:'SaveImage',inputs:{filename_prefix:'animationgeneration/character',images:['9',0]}}
     };
+    if(settings.lora){
+      graph['13']={class_type:'LoraLoader',inputs:{model:['4',0],clip:['4',1],lora_name:settings.lora,strength_model:settings.loraStrength,strength_clip:settings.loraStrength}};
+      graph['6'].inputs.clip=['13',1]; graph['7'].inputs.clip=['13',1]; graph['8'].inputs.model=['13',0];
+    }
     if(referenceFilename){
       graph['11']={class_type:'LoadImage',inputs:{image:referenceFilename}};
       graph['12']={class_type:'VAEEncode',inputs:{pixels:['11',0],vae:['4',2]}};
-      graph['8'].inputs.latent_image=['12',0];
-      graph['8'].inputs.denoise=settings.denoise;
+      graph['8'].inputs.latent_image=['12',0]; graph['8'].inputs.denoise=settings.denoise;
     }
     return graph;
   }
