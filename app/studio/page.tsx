@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ImagePlus, Sparkles, Wand2, Upload, UserRound, Film, SlidersHorizontal, Cpu, RefreshCw, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 import ChatPanel from '@/components/ChatPanel';
+import { buildCharacterProfile, type CharacterProfile } from '@/lib/character-profile';
 
-type Character = { id:string; name:string; role:string; style:string; age:string; traits:string; notes:string; image:string|null; voice?:string; faceConsent?:boolean; created:string };
+type Character = { id:string; name:string; role:string; style:string; age:string; traits:string; notes:string; image:string|null; voice?:string; faceConsent?:boolean; created:string; profile?:CharacterProfile };
 type Output = { filename:string; subfolder:string; type:string; url:string };
 type Job = { id:string; status:string; outputs:Output[]; error?:string };
 
@@ -66,7 +67,7 @@ export default function Home() {
   function saveCharacter(){
     if(!form.name.trim()){setStatus('Give the character a name first.');return}
     if(image&&!faceConsent){setStatus('Please confirm the face-reference safety checkbox.');return}
-    const c:Character={id:crypto.randomUUID(),...form,image,faceConsent,created:new Date().toISOString()};
+    const id=crypto.randomUUID(); const c:Character={id,...form,image,faceConsent,created:new Date().toISOString(),profile:buildCharacterProfile({id,...form,image,faceConsent})};
     setCharacters(p=>[c,...p]); setSelectedId(c.id); setStatus('Character saved locally.'); setActive('gallery');
   }
 
@@ -113,6 +114,8 @@ export default function Home() {
   async function generate(){
     if(image&&!faceConsent){setStatus('Please confirm the face-reference safety checkbox.');return}
     if(!prompt.trim()){setStatus('Add a generation prompt first.');return}
+    setStatus('Checking prompt safety…');
+    try{const mr=await fetch('/api/moderate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});const md=await mr.json();if(!md.allowed){setStatus(md.reason||'Prompt blocked by safety filter.');return}}catch{setStatus('Safety filter unavailable. Generation stopped.');return}
     if(mode==='animation' && !template){setStatus('Import a ComfyUI API workflow template for animation first.');return}
     const character=characters.find(c=>c.id===selectedId) || (form.name.trim()?{id:'draft',...form,image,created:new Date().toISOString()}:null);
     if(!character){setStatus('Create or select a character first.');return}
@@ -136,7 +139,7 @@ export default function Home() {
         promptId=wd.promptId;
       }else{
         const body=new FormData();
-        body.append('character',JSON.stringify({name:character.name,role:character.role,age:character.age,style:character.style,traits:character.traits,notes:character.notes}));
+        body.append('character',JSON.stringify(character.profile||buildCharacterProfile({...character,style:character.style})));
         body.append('scene',prompt); body.append('mode','image');
         body.append('settings',JSON.stringify({...settings,seed:settings.seed===''?undefined:Number(settings.seed)}));
         if(uploadFile) body.append('image',uploadFile,uploadFile.name);
@@ -164,7 +167,7 @@ export default function Home() {
         <button className={active==='gallery'?'nav active':'nav'} onClick={()=>setActive('gallery')}>Characters <span>{countLabel}</span></button>
         <button className={active==='generate'?'nav active':'nav'} onClick={()=>setActive('generate')}>Generate</button>
         <button className={active==='outputs'?'nav active':'nav'} onClick={()=>setActive('outputs')}>Outputs</button>
-        <button className={active==='chat'?'nav active':'nav'} onClick={()=>setActive('chat')}>Chat</button>
+        <button className={active==='chat'?'nav active':'nav'} onClick={()=>setActive('chat')}>Chat</button><a className="nav navLink" href="/storyboard">Storyboard</a><a className="nav navLink" href="/animate">Animate</a><a className="nav navLink" href="/gallery">Gallery</a>
       </nav>
       <div className="accountLinks"><a href="/login">Sign in</a><a className="accountCta" href="/signup">Create account</a></div>
       <div className="status"><i className={comfy==='connected'?'online':''}/>{comfy==='connected'?'ComfyUI connected':comfy==='offline'?'ComfyUI offline':'Checking ComfyUI…'}</div>
