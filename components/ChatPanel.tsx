@@ -77,10 +77,11 @@ export default function ChatPanel({activeCharacter}:{activeCharacter?:ActiveChar
       recorder.onstop=async()=>{
         stream.getTracks().forEach(t=>t.stop());
         const blob=new Blob(chunks.current,{type:mime});
+        const filename=mime.includes('mp4')?'voice-note.mp4':'voice-note.webm';
         if(blob.size>25*1024*1024){alert('Voice note is too large. Keep recordings under 25 MB.');return}
         setTranscribing(true);
         try{
-          const body=new FormData();body.append('file',blob,'voice-note.webm');
+          const body=new FormData();body.append('file',blob,filename);
           const res=await fetch('/api/transcribe',{method:'POST',body});
           const data=await res.json();
           if(!res.ok)throw new Error(data.error||'Transcription failed');
