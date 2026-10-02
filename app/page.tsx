@@ -22,8 +22,9 @@ export default function Home() {
   const [polling,setPolling]=useState(false);
   const [selectedId,setSelectedId]=useState('');
   const [checkpoints,setCheckpoints]=useState<string[]>([]);
+  const [loras,setLoras]=useState<string[]>([]);
   const [modelLoading,setModelLoading]=useState(false);
-  const [settings,setSettings]=useState({checkpoint:'',width:768,height:1024,steps:28,cfg:7,seed:'',denoise:0.65,batchSize:1,negativePrompt:'low quality, distorted anatomy, duplicate subject, inconsistent character identity, unreadable text'});
+  const [settings,setSettings]=useState({checkpoint:'',lora:'',loraStrength:0.8,width:768,height:1024,steps:28,cfg:7,seed:'',denoise:0.65,batchSize:1,negativePrompt:'low quality, distorted anatomy, duplicate subject, inconsistent character identity, unreadable text'});
 
   const countLabel=useMemo(()=>`${characters.length} character${characters.length===1?'':'s'}`,[characters.length]);
 
@@ -32,7 +33,7 @@ export default function Home() {
 
   async function loadModels(){
     setModelLoading(true);
-    try { const r=await fetch('/api/comfyui/models',{cache:'no-store'}); const d=await r.json(); if(r.ok && d.checkpoints?.length){ setCheckpoints(d.checkpoints); setSettings(s=>({...s,checkpoint:s.checkpoint||d.checkpoints[0]})); } }
+    try { const r=await fetch('/api/comfyui/models',{cache:'no-store'}); const d=await r.json(); if(r.ok){ setCheckpoints(d.checkpoints||[]); setLoras(d.loras||[]); if(d.checkpoints?.length) setSettings(s=>({...s,checkpoint:s.checkpoint||d.checkpoints[0]})); } }
     catch {} finally { setModelLoading(false); }
   }
 
@@ -147,6 +148,8 @@ export default function Home() {
         <label>Generation prompt<textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Describe the scene, pose, camera, lighting and animation intent…"/></label>
         <div className="controlsGrid">
           <label>Checkpoint<select value={settings.checkpoint} onChange={e=>setSettings({...settings,checkpoint:e.target.value})} disabled={modelLoading||checkpoints.length===0}><option value="">{modelLoading?'Discovering models…':'No checkpoint detected'}</option>{checkpoints.map(m=><option key={m}>{m}</option>)}</select></label>
+          <label>LoRA<select value={settings.lora} onChange={e=>setSettings({...settings,lora:e.target.value})} disabled={loras.length===0}><option value="">None</option>{loras.map(m=><option key={m}>{m}</option>)}</select></label>
+          <label>LoRA strength<input type="number" min="0" max="2" step="0.05" value={settings.loraStrength} disabled={!settings.lora} onChange={e=>setSettings({...settings,loraStrength:Number(e.target.value)})}/></label>
           <label>Aspect / size<select value={`${settings.width}x${settings.height}`} onChange={e=>{const [w,h]=e.target.value.split('x').map(Number);setSettings({...settings,width:w,height:h})}}><option value="768x1024">Portrait 3:4</option><option value="1024x1024">Square 1:1</option><option value="1024x768">Landscape 4:3</option><option value="1280x720">Widescreen 16:9</option><option value="720x1280">Vertical 9:16</option></select></label>
           <label>Steps<input type="number" min="1" max="80" value={settings.steps} onChange={e=>setSettings({...settings,steps:Number(e.target.value)})}/></label>
           <label>CFG<input type="number" min="1" max="20" step="0.5" value={settings.cfg} onChange={e=>setSettings({...settings,cfg:Number(e.target.value)})}/></label>
@@ -166,6 +169,6 @@ export default function Home() {
       {job.error&&<div className="errorBox">{job.error}</div>}
       {job.outputs.length>0?<div className="outputGrid">{job.outputs.map((o,i)=><article className="outputCard" key={`${o.filename}-${i}`}>{/\.(mp4|webm|mov|gif)$/i.test(o.filename)?<video src={o.url} controls playsInline/>:<img src={o.url} alt={o.filename}/>}<div><span>{o.filename}</span><a href={o.url} target="_blank" rel="noreferrer">Open output</a></div></article>)}</div>:job.status!=='error'&&<div className="empty small"><Loader2 className="spin"/><p>Waiting for ComfyUI to finish and expose the output file…</p></div>}</div>}
     </section>}
-    <footer><span>Animation Generation Studio</span><span>Characters · References · ComfyUI · Outputs</span><span>v0.4</span></footer>
+    <footer><span>Animation Generation Studio</span><span>Characters · References · ComfyUI · Outputs</span><span>v0.5</span></footer>
   </main>
 }
