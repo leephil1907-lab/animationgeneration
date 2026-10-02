@@ -57,7 +57,7 @@ export default function Home() {
     setStatus('Character loaded. Re-select its reference image before generation if needed.');
   }
 
-  function clearStudio(){setImage(null);setReferenceFile(null);setForm(emptyForm);setStatus('Studio cleared.');}
+  function clearStudio(){setImage(null);setReferenceFile(null);setForm(emptyForm);setStatus('Studio cleared.');}\n\n  async function dataUrlToFile(dataUrl:string,name:string){ const r=await fetch(dataUrl); const blob=await r.blob(); return new File([blob],name,{type:blob.type||'image/png'}); }
 
   async function generate(){
     if(!prompt.trim()){setStatus('Add a generation prompt first.');return}
@@ -69,7 +69,7 @@ export default function Home() {
       body.append('character',JSON.stringify({name:character.name,role:character.role,age:character.age,style:character.style,traits:character.traits,notes:character.notes}));
       body.append('scene',prompt);
       body.append('mode','image');
-      if(referenceFile) body.append('image',referenceFile,referenceFile.name);
+      const uploadFile=referenceFile || (character.image?.startsWith('data:') ? await dataUrlToFile(character.image,`${character.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase() || 'character'}-reference.png`) : null);\n      if(uploadFile) body.append('image',uploadFile,uploadFile.name);
       const r=await fetch('/api/comfyui/character',{method:'POST',body});
       const data=await r.json();
       if(!r.ok) throw new Error(data.details||data.error||'ComfyUI rejected the workflow');
@@ -81,7 +81,7 @@ export default function Home() {
         const jr=await fetch(`/api/comfyui/job/${encodeURIComponent(promptId)}`,{cache:'no-store'});
         const jd=await jr.json();
         if(jd.status==='completed'){setJob({id:promptId,status:'completed',outputs:jd.outputs||[]});setStatus('Generation complete.');setPolling(false);return}
-        if(jd.error) throw new Error(jd.details||jd.error);
+        if(jd.status==='error') throw new Error(Array.isArray(jd.error)?JSON.stringify(jd.error):String(jd.error||jd.details||'ComfyUI execution failed'));
         setJob({id:promptId,status:jd.status||'running',outputs:[]});
       }
       throw new Error('Generation timed out while waiting for ComfyUI history.');
