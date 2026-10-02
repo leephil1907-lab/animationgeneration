@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ImagePlus, Sparkles, Wand2, Upload, UserRound, Film, SlidersHorizontal, Cpu, RefreshCw, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 import ChatPanel from '@/components/ChatPanel';
 
@@ -12,7 +13,7 @@ const emptyForm={name:'',role:'',age:'Adult',style:'Cinematic',traits:'',notes:'
 
 export default function Home() {
   const [characters,setCharacters]=useState<Character[]>([]);
-  const [active,setActive]=useState<'create'|'gallery'|'generate'|'outputs'|'chat'>('create');
+  const [active,setActive]=useState<'create'|'gallery'|'generate'|'outputs'|'chat'>(initialView);
   const [image,setImage]=useState<string|null>(null);
   const [referenceFile,setReferenceFile]=useState<File|null>(null);
   const [form,setForm]=useState(emptyForm);
@@ -31,6 +32,7 @@ export default function Home() {
 
   const countLabel=useMemo(()=>`${characters.length} character${characters.length===1?'':'s'}`,[characters.length]);
 
+  useEffect(()=>{ setActive(initialView); },[initialView]);
   useEffect(()=>{ try { const saved=localStorage.getItem('ags-characters'); if(saved) setCharacters(JSON.parse(saved)); } catch {} checkComfy(); loadModels(); },[]);
   useEffect(()=>{ try { localStorage.setItem('ags-characters',JSON.stringify(characters)); } catch {} },[characters]);
 
