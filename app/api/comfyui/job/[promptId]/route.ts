@@ -10,6 +10,8 @@ export async function GET(_:Request,{params}:{params:Promise<{promptId:string}>}
     const history=JSON.parse(text);
     const item=history[promptId];
     if(!item) return NextResponse.json({status:'queued',promptId});
+    const execution=item.status?.status_str;
+    if(execution==='error' || execution==='failed') return NextResponse.json({status:'error',promptId,error:item.status?.messages||'ComfyUI execution failed',history:item});
     const outputs=[] as Array<{filename:string;subfolder:string;type:string;url:string}>;
     for(const node of Object.values(item.outputs||{}) as any[]) {
       for(const key of ['images','gifs','videos','files']) {
