@@ -1,0 +1,13 @@
+{
+  "name": "MOTIONA — AI Character & Animation Studio",
+  "short_name": "MOTIONA",
+  "description": "Local-first AI character, voice and animation workspace powered by ComfyUI.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}
