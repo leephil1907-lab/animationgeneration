@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime='nodejs';
 
 const voiceMap:Record<string,string>={
-  'warm-female':process.env.ELEVENLABS_WARM_FEMALE_VOICE_ID||'EXAVITQu4vr4xnSDxMaL',
-  'deep-male':process.env.ELEVENLABS_DEEP_MALE_VOICE_ID||'pNInz6obpgDQGcFmaJgB',
-  'soft-breathy':process.env.ELEVENLABS_SOFT_BREATHY_VOICE_ID||'jBpfuIE2acCO8z3wKNLl',
-  'energetic':process.env.ELEVENLABS_ENERGETIC_VOICE_ID||'VR6AewLTigWG4xSOukaG',
-  'calm-narrator':process.env.ELEVENLABS_CALM_NARRATOR_VOICE_ID||'onwK4e9ZLuTAKqWW03F9',
+  'warm-female':process.env.ELEVENLABS_WARM_FEMALE_VOICE_ID||'',
+  'deep-male':process.env.ELEVENLABS_DEEP_MALE_VOICE_ID||'',
+  'soft-breathy':process.env.ELEVENLABS_SOFT_BREATHY_VOICE_ID||'',
+  'energetic':process.env.ELEVENLABS_ENERGETIC_VOICE_ID||'',
+  'calm-narrator':process.env.ELEVENLABS_CALM_NARRATOR_VOICE_ID||'',
 };
 
 export async function POST(req:NextRequest){
@@ -17,6 +17,7 @@ export async function POST(req:NextRequest){
     const key=process.env.ELEVENLABS_API_KEY;
     if(!key)return NextResponse.json({error:'ElevenLabs is not configured.'},{status:501});
     const voiceId=voiceMap[String(voice||'warm-female')]||voiceMap['warm-female'];
+    if(!voiceId)return NextResponse.json({error:'No ElevenLabs voice ID is configured for this preset.'},{status:501});
     const response=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+voiceId,{
       method:'POST',
       headers:{'xi-api-key':key,'Content-Type':'application/json','Accept':'audio/mpeg'},
