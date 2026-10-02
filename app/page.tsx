@@ -76,24 +76,38 @@ export default function Home() {
     if(mode==='animation' && !template){setStatus('Import a ComfyUI API workflow template for animation first.');return}
     const character=characters.find(c=>c.id===selectedId) || (form.name.trim()?{id:'draft',...form,image,created:new Date().toISOString()}:null);
     if(!character){setStatus('Create or select a character first.');return}
-    setPolling(true); setJob({id:'',status:'submitting',outputs:[]}); setActive('outputs'); setStatus('Uploading reference and queueing ComfyUI workflow…');
+    setPolling(true); setJob({id:'',status:'submitting',outputs:[]}); setActive('outputs'); setStatus('Preparing ComfyUI workflow…');
     try{
-      const body=new FormData();
-      body.append('character',JSON.stringify({name:character.name,role:character.role,age:character.age,style:character.style,traits:character.traits,notes:character.notes}));
-      body.append('scene',prompt);
-      body.append('mode',mode==='animation'?'video':'image');
-      body.append('settings',JSON.stringify({...settings,seed:settings.seed===''?undefined:Number(settings.seed)}));
-      const uploadFile=referenceFile || (character.image?.startsWith('data:') ? await dataUrlToFile(character.image,`${character.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase() || 'character'}-reference.png`) : null);\n      if(uploadFile) body.append('image',uploadFile,uploadFile.name);
-      const r=await fetch('/api/comfyui/character',{method:'POST',body});
-      const data=await r.json();
-      if(!r.ok) throw new Error(data.details||data.error||'ComfyUI rejected the workflow');
-      const promptId=data.promptId as string;
-      setJob({id:promptId,status:'queued',outputs:[]});
-      setStatus('Generation queued. Waiting for ComfyUI output…');
+      const uploadFile=referenceFile || (character.image?.startsWith('data:') ? await dataUrlToFile(character.image,`${character.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase() || 'character'}-reference.png`) : null);
+      let promptId='';
+      if(mode==='animation'){
+        let referenceFilename='';
+        if(uploadFile){
+          const uploadBody=new FormData(); uploadBody.append('image',uploadFile,uploadFile.name);
+          const ur=await fetch('/api/comfyui/upload',{method:'POST',body:uploadBody}); const ud=await ur.json();
+          if(!ur.ok) throw new Error(ud.details||ud.error||'Reference upload failed');
+          referenceFilename=ud.name;
+        }
+        const wr=await fetch('/api/comfyui/workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          workflow:template.workflow,
+          values:{prompt:`${character.name}: ${character.traits||''}\n${character.notes||''}\nScene: ${prompt}`,negativePrompt:settings.negativePrompt,referenceFilename,seed:settings.seed===''?undefined:Number(settings.seed),width:settings.width,height:settings.height}
+        })});
+        const wd=await wr.json(); if(!wr.ok) throw new Error(wd.details||wd.error||'Animation workflow rejected');
+        promptId=wd.promptId;
+      }else{
+        const body=new FormData();
+        body.append('character',JSON.stringify({name:character.name,role:character.role,age:character.age,style:character.style,traits:character.traits,notes:character.notes}));
+        body.append('scene',prompt); body.append('mode','image');
+        body.append('settings',JSON.stringify({...settings,seed:settings.seed===''?undefined:Number(settings.seed)}));
+        if(uploadFile) body.append('image',uploadFile,uploadFile.name);
+        const r=await fetch('/api/comfyui/character',{method:'POST',body}); const data=await r.json();
+        if(!r.ok) throw new Error(data.details||data.error||'ComfyUI rejected the workflow');
+        promptId=data.promptId as string;
+      }
+      setJob({id:promptId,status:'queued',outputs:[]}); setStatus(mode==='animation'?'Animation queued. Waiting for ComfyUI output…':'Generation queued. Waiting for ComfyUI output…');
       for(let i=0;i<180;i++){
         await new Promise(resolve=>setTimeout(resolve,1500));
-        const jr=await fetch(`/api/comfyui/job/${encodeURIComponent(promptId)}`,{cache:'no-store'});
-        const jd=await jr.json();
+        const jr=await fetch(`/api/comfyui/job/${encodeURIComponent(promptId)}`,{cache:'no-store'}); const jd=await jr.json();
         if(jd.status==='completed'){setJob({id:promptId,status:'completed',outputs:jd.outputs||[]});setStatus('Generation complete.');setPolling(false);return}
         if(jd.status==='error') throw new Error(Array.isArray(jd.error)?JSON.stringify(jd.error):String(jd.error||jd.details||'ComfyUI execution failed'));
         setJob({id:promptId,status:jd.status||'running',outputs:[]});
