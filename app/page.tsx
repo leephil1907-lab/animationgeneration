@@ -1,27 +1,151 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ImagePlus, Sparkles, Wand2, Upload, UserRound, Film, SlidersHorizontal, Cpu, RefreshCw } from 'lucide-react';
+import { ImagePlus, Sparkles, Wand2, Upload, UserRound, Film, SlidersHorizontal, Cpu, RefreshCw, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 
 type Character = { id:string; name:string; role:string; style:string; age:string; traits:string; notes:string; image:string|null; created:string };
+type Output = { filename:string; subfolder:string; type:string; url:string };
+type Job = { id:string; status:string; outputs:Output[]; error?:string };
+
+const emptyForm={name:'',role:'',age:'Adult',style:'Cinematic',traits:'',notes:''};
 
 export default function Home() {
-  const [characters,setCharacters]=useState<Character[]>([]); const [active,setActive]=useState<'create'|'gallery'|'generate'>('create');
-  const [image,setImage]=useState<string|null>(null); const [form,setForm]=useState({name:'',role:'',age:'Adult',style:'Cinematic',traits:'',notes:''});
-  const [status,setStatus]=useState('Ready'); const [comfy,setComfy]=useState<'checking'|'connected'|'offline'>('checking'); const [prompt,setPrompt]=useState(''); const [queue,setQueue]=useState('');
+  const [characters,setCharacters]=useState<Character[]>([]);
+  const [active,setActive]=useState<'create'|'gallery'|'generate'|'outputs'>('create');
+  const [image,setImage]=useState<string|null>(null);
+  const [referenceFile,setReferenceFile]=useState<File|null>(null);
+  const [form,setForm]=useState(emptyForm);
+  const [status,setStatus]=useState('Ready');
+  const [comfy,setComfy]=useState<'checking'|'connected'|'offline'>('checking');
+  const [prompt,setPrompt]=useState('');
+  const [job,setJob]=useState<Job|null>(null);
+  const [polling,setPolling]=useState(false);
+  const [selectedId,setSelectedId]=useState('');
+
   const countLabel=useMemo(()=>`${characters.length} character${characters.length===1?'':'s'}`,[characters.length]);
 
-  async function checkComfy(){ setComfy('checking'); try { const r=await fetch('/api/comfyui/status'); setComfy(r.ok?'connected':'offline'); } catch { setComfy('offline'); } }
-  useEffect(()=>{checkComfy()},[]);
-  function onUpload(file?:File){if(!file)return;if(!file.type.startsWith('image/')){setStatus('Please choose an image file.');return}const reader=new FileReader();reader.onload=()=>{setImage(String(reader.result));setStatus('Reference image loaded.')};reader.readAsDataURL(file)}
-  function saveCharacter(){if(!form.name.trim()){setStatus('Give the character a name first.');return}const c:Character={id:crypto.randomUUID(),...form,image,created:new Date().toISOString()};setCharacters(p=>[c,...p]);setStatus('Character saved to this session.');setActive('gallery')}
-  function clearStudio(){setImage(null);setForm({name:'',role:'',age:'Adult',style:'Cinematic',traits:'',notes:''});setStatus('Studio cleared.')}
-  async function queueWorkflow(){if(!prompt.trim()){setQueue('Add a generation prompt first.');return}setQueue('Sending workflow to ComfyUI…');try{const r=await fetch('/api/comfyui/prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:{},clientId:'animation-generation-studio'})});setQueue(r.ok?'Workflow accepted by ComfyUI. Add a workflow JSON to activate generation nodes.':'ComfyUI rejected the request.')}catch{setQueue('ComfyUI is offline. Start ComfyUI and try again.')}}
+  useEffect(()=>{ try { const saved=localStorage.getItem('ags-characters'); if(saved) setCharacters(JSON.parse(saved)); } catch {} checkComfy(); },[]);
+  useEffect(()=>{ try { localStorage.setItem('ags-characters',JSON.stringify(characters)); } catch {} },[characters]);
+
+  async function checkComfy(){
+    setComfy('checking');
+    try { const r=await fetch('/api/comfyui/status',{cache:'no-store'}); setComfy(r.ok?'connected':'offline'); }
+    catch { setComfy('offline'); }
+  }
+
+  function onUpload(file?:File){
+    if(!file)return;
+    if(!file.type.startsWith('image/')){setStatus('Please choose an image file.');return}
+    setReferenceFile(file);
+    const reader=new FileReader();
+    reader.onload=()=>{setImage(String(reader.result));setStatus('Reference image loaded.');};
+    reader.readAsDataURL(file);
+  }
+
+  function saveCharacter(){
+    if(!form.name.trim()){setStatus('Give the character a name first.');return}
+    const c:Character={id:crypto.randomUUID(),...form,image,created:new Date().toISOString()};
+    setCharacters(p=>[c,...p]); setSelectedId(c.id); setStatus('Character saved locally.'); setActive('gallery');
+  }
+
+  function useCharacter(c:Character){
+    setForm({name:c.name,role:c.role,age:c.age,style:c.style,traits:c.traits,notes:c.notes});
+    setImage(c.image);
+    setReferenceFile(null);
+    setSelectedId(c.id);
+    setActive('generate');
+    setStatus('Character loaded. Re-select its reference image before generation if needed.');
+  }
+
+  function clearStudio(){setImage(null);setReferenceFile(null);setForm(emptyForm);setStatus('Studio cleared.');}
+
+  async function generate(){
+    if(!prompt.trim()){setStatus('Add a generation prompt first.');return}
+    const character=characters.find(c=>c.id===selectedId) || (form.name.trim()?{id:'draft',...form,image,created:new Date().toISOString()}:null);
+    if(!character){setStatus('Create or select a character first.');return}
+    setPolling(true); setJob({id:'',status:'submitting',outputs:[]}); setActive('outputs'); setStatus('Uploading reference and queueing ComfyUI workflow…');
+    try{
+      const body=new FormData();
+      body.append('character',JSON.stringify({name:character.name,role:character.role,age:character.age,style:character.style,traits:character.traits,notes:character.notes}));
+      body.append('scene',prompt);
+      body.append('mode','image');
+      if(referenceFile) body.append('image',referenceFile,referenceFile.name);
+      const r=await fetch('/api/comfyui/character',{method:'POST',body});
+      const data=await r.json();
+      if(!r.ok) throw new Error(data.details||data.error||'ComfyUI rejected the workflow');
+      const promptId=data.promptId as string;
+      setJob({id:promptId,status:'queued',outputs:[]});
+      setStatus('Generation queued. Waiting for ComfyUI output…');
+      for(let i=0;i<180;i++){
+        await new Promise(resolve=>setTimeout(resolve,1500));
+        const jr=await fetch(`/api/comfyui/job/${encodeURIComponent(promptId)}`,{cache:'no-store'});
+        const jd=await jr.json();
+        if(jd.status==='completed'){setJob({id:promptId,status:'completed',outputs:jd.outputs||[]});setStatus('Generation complete.');setPolling(false);return}
+        if(jd.error) throw new Error(jd.details||jd.error);
+        setJob({id:promptId,status:jd.status||'running',outputs:[]});
+      }
+      throw new Error('Generation timed out while waiting for ComfyUI history.');
+    }catch(e){setJob(j=>({id:j?.id||'',status:'error',outputs:[],error:String(e instanceof Error?e.message:e)}));setStatus('Generation failed.');setPolling(false);}
+  }
+
   return <main>
-    <header className="topbar"><div className="brand"><span className="brandMark">AG</span><div><strong>ANIMATION</strong><small>GENERATION STUDIO</small></div></div><nav><button className={active==='create'?'nav active':'nav'} onClick={()=>setActive('create')}>Create</button><button className={active==='gallery'?'nav active':'nav'} onClick={()=>setActive('gallery')}>Characters <span>{countLabel}</span></button><button className={active==='generate'?'nav active':'nav'} onClick={()=>setActive('generate')}>Generate</button></nav><div className="status"><i className={comfy==='connected'?'online':''}/>{comfy==='connected'?'ComfyUI connected':comfy==='offline'?'ComfyUI offline':'Checking ComfyUI…'}</div></header>
-    {active==='create'&&<section className="workspace"><div className="hero"><div><p className="eyebrow"><Sparkles size={14}/> CHARACTER LAB</p><h1>Build a character<br/><em>you can animate.</em></h1><p className="sub">Start from a blank character or upload a reference image. Define identity, visual language and performance details before sending the character into your generation workflow.</p></div><div className="heroBadge"><Wand2 size={18}/><span>ComfyUI workflow bridge</span></div></div><div className="grid"><section className="panel reference"><div className="panelHead"><div><b>01 / REFERENCE</b><h2>Character image</h2></div><ImagePlus size={20}/></div><label className="drop" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();onUpload(e.dataTransfer.files?.[0])}}>{image?<img src={image} alt="Character reference"/>:<><div className="uploadIcon"><Upload size={22}/></div><strong>Drop an image here</strong><span>or browse your device gallery</span><small>PNG, JPG, WEBP · local preview</small></>}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>onUpload(e.target.files?.[0])}/></label>{image&&<button className="textBtn" onClick={()=>setImage(null)}>Remove reference</button>}<div className="privacy"><span>LOCAL-FIRST</span><p>The selected image stays in the browser until a generation workflow explicitly sends it to the configured backend.</p></div></section><section className="panel details"><div className="panelHead"><div><b>02 / IDENTITY</b><h2>Character details</h2></div><UserRound size={20}/></div><div className="fields"><label>Name<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. Nova Vale"/></label><label>Role / archetype<input value={form.role} onChange={e=>setForm({...form,role:e.target.value})} placeholder="e.g. explorer, detective, pilot"/></label><label>Age presentation<select value={form.age} onChange={e=>setForm({...form,age:e.target.value})}><option>Adult</option><option>Young adult</option><option>Middle-aged</option><option>Older adult</option><option>Custom</option></select></label><label>Visual style<select value={form.style} onChange={e=>setForm({...form,style:e.target.value})}><option>Cinematic</option><option>Anime</option><option>Illustrated</option><option>Stylized 3D</option><option>Photoreal</option></select></label><label className="wide">Traits & appearance<textarea value={form.traits} onChange={e=>setForm({...form,traits:e.target.value})} placeholder="Hair, clothing, colors, body language, distinctive features…"/></label><label className="wide">Character direction<textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Personality, voice, movement, story role, animation notes…"/></label></div></section></div><div className="actionbar"><div><SlidersHorizontal size={17}/><span>Character consistency profile is ready for generation workflows.</span></div><button className="secondary" onClick={clearStudio}>Clear</button><button className="primary" onClick={saveCharacter} disabled={!form.name.trim()}><Sparkles size={17}/> Create character</button></div></section>}
-    {active==='gallery'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><UserRound size={14}/> CHARACTER GALLERY</p><h1>Your characters</h1></div><button className="primary" onClick={()=>setActive('create')}><ImagePlus size={17}/> New character</button></div>{characters.length===0?<div className="empty"><UserRound size={32}/><h2>No characters yet</h2><p>Create your first character from a prompt or reference image.</p><button className="primary" onClick={()=>setActive('create')}>Open character lab</button></div>:<div className="cards">{characters.map(c=><article className="card" key={c.id}>{c.image?<img src={c.image} alt={c.name}/>:<div className="cardPlaceholder"><UserRound/></div>}<div><h3>{c.name}</h3><p>{c.role||'Character'} · {c.style}</p><span>{c.traits||'No appearance notes yet.'}</span></div></article>)}</div>}</section>}
-    {active==='generate'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><Cpu size={14}/> GENERATION PIPELINE</p><h1>Generate & animate.</h1><p className="sub">The studio now has a server-side bridge to a local ComfyUI API. Connect ComfyUI and provide a workflow JSON to execute real generation.</p></div><button className="secondary" onClick={checkComfy}><RefreshCw size={15}/> Refresh</button></div><div className="generatePanel panel"><div className="pipelineRow"><span>REFERENCE</span><span>CHARACTER PROFILE</span><span>COMFYUI</span><span>OUTPUT</span></div><label>Generation prompt<textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Describe the scene, pose, camera, lighting and animation intent…"/></label><div className="generationActions"><button className="primary" onClick={queueWorkflow}><Sparkles size={16}/> Queue ComfyUI workflow</button><span>{queue}</span></div><div className="future"><Film size={20}/><div><b>Animation pipeline</b><p>Image-to-video, AnimateDiff/Wan workflows and frame interpolation can be attached to the same character profile without changing the character-creation interface.</p></div></div></div></section>}
-    <footer><span>Animation Generation Studio</span><span>Characters · References · ComfyUI · Animation</span><span>v0.2</span></footer>
+    <header className="topbar">
+      <div className="brand"><span className="brandMark">AG</span><div><strong>ANIMATION</strong><small>GENERATION STUDIO</small></div></div>
+      <nav>
+        <button className={active==='create'?'nav active':'nav'} onClick={()=>setActive('create')}>Create</button>
+        <button className={active==='gallery'?'nav active':'nav'} onClick={()=>setActive('gallery')}>Characters <span>{countLabel}</span></button>
+        <button className={active==='generate'?'nav active':'nav'} onClick={()=>setActive('generate')}>Generate</button>
+        <button className={active==='outputs'?'nav active':'nav'} onClick={()=>setActive('outputs')}>Outputs</button>
+      </nav>
+      <div className="status"><i className={comfy==='connected'?'online':''}/>{comfy==='connected'?'ComfyUI connected':comfy==='offline'?'ComfyUI offline':'Checking ComfyUI…'}</div>
+    </header>
+
+    {active==='create'&&<section className="workspace">
+      <div className="hero"><div><p className="eyebrow"><Sparkles size={14}/> CHARACTER LAB</p><h1>Build a character<br/><em>you can animate.</em></h1><p className="sub">Start from a blank character or upload a reference image. Define identity, visual language and performance details before sending the character into ComfyUI.</p></div><div className="heroBadge"><Wand2 size={18}/><span>Real ComfyUI workflow bridge</span></div></div>
+      <div className="grid">
+        <section className="panel reference"><div className="panelHead"><div><b>01 / REFERENCE</b><h2>Character image</h2></div><ImagePlus size={20}/></div>
+          <label className="drop" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();onUpload(e.dataTransfer.files?.[0])}}>
+            {image?<img src={image} alt="Character reference"/>:<><div className="uploadIcon"><Upload size={22}/></div><strong>Drop an image here</strong><span>or browse your device gallery</span><small>PNG, JPG, WEBP · local preview</small></>}
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>onUpload(e.target.files?.[0])}/>
+          </label>
+          {image&&<button className="textBtn" onClick={()=>{setImage(null);setReferenceFile(null)}}>Remove reference</button>}
+          <div className="privacy"><span>LOCAL-FIRST UNTIL SUBMIT</span><p>The image stays in the browser until you press Generate. At that point it is uploaded to the configured ComfyUI instance.</p></div>
+        </section>
+        <section className="panel details"><div className="panelHead"><div><b>02 / IDENTITY</b><h2>Character details</h2></div><UserRound size={20}/></div>
+          <div className="fields">
+            <label>Name<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. Nova Vale"/></label>
+            <label>Role / archetype<input value={form.role} onChange={e=>setForm({...form,role:e.target.value})} placeholder="e.g. explorer, detective, pilot"/></label>
+            <label>Age presentation<select value={form.age} onChange={e=>setForm({...form,age:e.target.value})}><option>Adult</option><option>Young adult</option><option>Middle-aged</option><option>Older adult</option><option>Custom</option></select></label>
+            <label>Visual style<select value={form.style} onChange={e=>setForm({...form,style:e.target.value})}><option>Cinematic</option><option>Anime</option><option>Illustrated</option><option>Stylized 3D</option><option>Photoreal</option></select></label>
+            <label className="wide">Traits & appearance<textarea value={form.traits} onChange={e=>setForm({...form,traits:e.target.value})} placeholder="Hair, clothing, colors, body language, distinctive features…"/></label>
+            <label className="wide">Character direction<textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Personality, voice, movement, story role, animation notes…"/></label>
+          </div>
+        </section>
+      </div>
+      <div className="actionbar"><div><SlidersHorizontal size={17}/><span>{status}</span></div><button className="secondary" onClick={clearStudio}>Clear</button><button className="primary" onClick={saveCharacter} disabled={!form.name.trim()}><Sparkles size={17}/> Save character</button></div>
+    </section>}
+
+    {active==='gallery'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><UserRound size={14}/> CHARACTER GALLERY</p><h1>Your characters</h1></div><button className="primary" onClick={()=>{clearStudio();setActive('create')}}><ImagePlus size={17}/> New character</button></div>
+      {characters.length===0?<div className="empty"><UserRound size={32}/><h2>No characters yet</h2><p>Create your first character from a prompt or reference image.</p><button className="primary" onClick={()=>setActive('create')}>Open character lab</button></div>:
+      <div className="cards">{characters.map(c=><article className="card" key={c.id}>{c.image?<img src={c.image} alt={c.name}/>:<div className="cardPlaceholder"><UserRound/></div>}<div><h3>{c.name}</h3><p>{c.role||'Character'} · {c.style}</p><span>{c.traits||'No appearance notes yet.'}</span><button className="secondary cardAction" onClick={()=>useCharacter(c)}>Use for generation</button></div></article>)}</div>}
+    </section>}
+
+    {active==='generate'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><Cpu size={14}/> GENERATION PIPELINE</p><h1>Generate.</h1><p className="sub">Select a saved character, add a scene, and the studio will upload the optional reference image, queue a character-aware ComfyUI image workflow, then poll for the finished output.</p></div><button className="secondary" onClick={checkComfy}><RefreshCw size={15}/> Refresh</button></div>
+      <div className="generatePanel panel">
+        <div className="pipelineRow"><span>REFERENCE</span><span>CHARACTER PROFILE</span><span>COMFYUI</span><span>OUTPUT</span></div>
+        <label>Character<select value={selectedId} onChange={e=>{setSelectedId(e.target.value);const c=characters.find(x=>x.id===e.target.value);if(c){setForm({name:c.name,role:c.role,age:c.age,style:c.style,traits:c.traits,notes:c.notes});setImage(c.image)}}}><option value="">Choose a saved character…</option>{characters.map(c=><option key={c.id} value={c.id}>{c.name} — {c.role||'Character'}</option>)}</select></label>
+        <label>Generation prompt<textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Describe the scene, pose, camera, lighting and animation intent…"/></label>
+        <div className="generationActions"><button className="primary" disabled={polling||!selectedId||comfy!=='connected'} onClick={generate}><Sparkles size={16}/> {polling?'Generating…':'Generate image'}</button><span>{status}</span></div>
+        <div className="future"><Film size={20}/><div><b>Next animation layer</b><p>Wan/AnimateDiff video generation is kept behind a workflow-template adapter so the app does not pretend there is one universal ComfyUI graph for every installed checkpoint and custom-node set.</p></div></div>
+      </div>
+    </section>}
+
+    {active==='outputs'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><Sparkles size={14}/> OUTPUT GALLERY</p><h1>Generated work.</h1></div><button className="secondary" onClick={()=>setActive('generate')}>Back to generation</button></div>
+      {!job?<div className="empty"><Sparkles size={32}/><h2>No generation in this session</h2><p>Run a ComfyUI generation to see the result here.</p><button className="primary" onClick={()=>setActive('generate')}>Open generator</button></div>:
+      <div className="outputWrap"><div className="jobState">{job.status==='completed'?<CheckCircle2/>:job.status==='error'?<AlertTriangle/>:<Loader2 className="spin"/>}<div><b>{job.status==='completed'?'Generation complete':job.status==='error'?'Generation failed':'Generation in progress'}</b><span>{job.id||'Submitting workflow…'}</span></div></div>
+      {job.error&&<div className="errorBox">{job.error}</div>}
+      {job.outputs.length>0?<div className="outputGrid">{job.outputs.map((o,i)=><article className="outputCard" key={`${o.filename}-${i}`}>{/\.(mp4|webm|mov|gif)$/i.test(o.filename)?<video src={o.url} controls playsInline/>:<img src={o.url} alt={o.filename}/>}<div><span>{o.filename}</span><a href={o.url} target="_blank" rel="noreferrer">Open output</a></div></article>)}</div>:job.status!=='error'&&<div className="empty small"><Loader2 className="spin"/><p>Waiting for ComfyUI to finish and expose the output file…</p></div>}</div>}
+    </section>}
+    <footer><span>Animation Generation Studio</span><span>Characters · References · ComfyUI · Outputs</span><span>v0.3</span></footer>
   </main>
 }
