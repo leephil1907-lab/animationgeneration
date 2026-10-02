@@ -57,6 +57,7 @@ export default function Home() {
     if(!file)return;
     if(!file.type.startsWith('image/')){setStatus('Please choose an image file.');return}
     setReferenceFile(file);
+    setFaceConsent(false);
     const reader=new FileReader();
     reader.onload=()=>{setImage(String(reader.result));setStatus('Reference image loaded.');};
     reader.readAsDataURL(file);
