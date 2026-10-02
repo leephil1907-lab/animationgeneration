@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ImagePlus, Sparkles, Wand2, Upload, UserRound, Film, SlidersHorizontal, Cpu, RefreshCw, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
+import ChatPanel from '@/components/ChatPanel';
 
 type Character = { id:string; name:string; role:string; style:string; age:string; traits:string; notes:string; image:string|null; created:string };
 type Output = { filename:string; subfolder:string; type:string; url:string };
@@ -11,7 +12,7 @@ const emptyForm={name:'',role:'',age:'Adult',style:'Cinematic',traits:'',notes:'
 
 export default function Home() {
   const [characters,setCharacters]=useState<Character[]>([]);
-  const [active,setActive]=useState<'create'|'gallery'|'generate'|'outputs'>('create');
+  const [active,setActive]=useState<'create'|'gallery'|'generate'|'outputs'|'chat'>('create');
   const [image,setImage]=useState<string|null>(null);
   const [referenceFile,setReferenceFile]=useState<File|null>(null);
   const [form,setForm]=useState(emptyForm);
@@ -124,6 +125,7 @@ export default function Home() {
         <button className={active==='gallery'?'nav active':'nav'} onClick={()=>setActive('gallery')}>Characters <span>{countLabel}</span></button>
         <button className={active==='generate'?'nav active':'nav'} onClick={()=>setActive('generate')}>Generate</button>
         <button className={active==='outputs'?'nav active':'nav'} onClick={()=>setActive('outputs')}>Outputs</button>
+        <button className={active==='chat'?'nav active':'nav'} onClick={()=>setActive('chat')}>Chat</button>
       </nav>
       <div className="status"><i className={comfy==='connected'?'online':''}/>{comfy==='connected'?'ComfyUI connected':comfy==='offline'?'ComfyUI offline':'Checking ComfyUI…'}</div>
     </header>
@@ -182,12 +184,14 @@ export default function Home() {
       </div>
     </section>}
 
+    {active==='chat'&&<ChatPanel/>}
+
     {active==='outputs'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><Sparkles size={14}/> OUTPUT GALLERY</p><h1>Generated work.</h1></div><button className="secondary" onClick={()=>setActive('generate')}>Back to generation</button></div>
       {!job?<div className="empty"><Sparkles size={32}/><h2>No generation in this session</h2><p>Run a ComfyUI generation to see the result here.</p><button className="primary" onClick={()=>setActive('generate')}>Open generator</button></div>:
       <div className="outputWrap"><div className="jobState">{job.status==='completed'?<CheckCircle2/>:job.status==='error'?<AlertTriangle/>:<Loader2 className="spin"/>}<div><b>{job.status==='completed'?'Generation complete':job.status==='error'?'Generation failed':'Generation in progress'}</b><span>{job.id||'Submitting workflow…'}</span></div></div>
       {job.error&&<div className="errorBox">{job.error}</div>}
       {job.outputs.length>0?<div className="outputGrid">{job.outputs.map((o,i)=><article className="outputCard" key={`${o.filename}-${i}`}>{/\.(mp4|webm|mov|gif)$/i.test(o.filename)?<video src={o.url} controls playsInline/>:<img src={o.url} alt={o.filename}/>}<div><span>{o.filename}</span><a href={o.url} target="_blank" rel="noreferrer">Open output</a></div></article>)}</div>:job.status!=='error'&&<div className="empty small"><Loader2 className="spin"/><p>Waiting for ComfyUI to finish and expose the output file…</p></div>}</div>}
     </section>}
-    <footer><span>Animation Generation Studio</span><span>Characters · References · ComfyUI · Outputs</span><span>v0.6</span></footer>
+    <footer><span>Animation Generation Studio</span><span>Characters · References · ComfyUI · Outputs · Agent Chat</span><span>v0.7</span></footer>
   </main>
 }
