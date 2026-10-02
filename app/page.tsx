@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Play, Sparkles, Wand2, Users, Film, MessageCircle, ChevronDown } from 'lucide-react';
 
-const nav=[['Studio','/studio'],['Characters','/studio?view=gallery'],['Generate','/studio?view=generate'],['Outputs','/studio?view=outputs'],['Chat','/studio?view=chat']];
+const nav=[['Studio','/studio'],['Characters','/studio?view=gallery'],['Generate','/studio?view=generate'],['Outputs','/studio?view=outputs'],['Chat','/studio?view=chat'],['Storyboard','/storyboard'],['Animate','/animate'],['Gallery','/gallery']];
 
 export default function Home(){
  return <main className="landing">
