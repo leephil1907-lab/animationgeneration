@@ -11,9 +11,9 @@ type Job = { id:string; status:string; outputs:Output[]; error?:string };
 
 const emptyForm={name:'',role:'',age:'Adult',style:'Cinematic',traits:'',notes:'',voice:'warm-female'};
 const voicePresets=[['warm-female','Warm female'],['deep-male','Deep male'],['soft-breathy','Soft / breathy'],['energetic','Energetic'],['calm-narrator','Calm narrator']] as const;
-const initialView='create' as const;
-
 export default function Home() {
+  const searchParams=useSearchParams();
+  const initialView=(searchParams.get('view') as 'create'|'gallery'|'generate'|'outputs'|'chat')||'create';
   const [characters,setCharacters]=useState<Character[]>([]);
   const [active,setActive]=useState<'create'|'gallery'|'generate'|'outputs'|'chat'>(initialView);
   const [image,setImage]=useState<string|null>(null);
