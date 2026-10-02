@@ -9,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><head><link rel="icon" href="/icon.svg" type="image/svg+xml"/><link rel="apple-touch-icon" href="/icon.svg"/></head><body><AgeGate>{children}</AgeGate></body></html>;
+  return <html lang="en"><head><link rel="icon" href="/icon.svg" type="image/svg+xml"/><link rel="apple-touch-icon" href="/icon.svg"/><link rel="manifest" href="/manifest.webmanifest"/></head><body><AgeGate>{children}</AgeGate></body></html>;
 }
