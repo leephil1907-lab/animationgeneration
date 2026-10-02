@@ -24,6 +24,8 @@ export default function Home() {
   const [checkpoints,setCheckpoints]=useState<string[]>([]);
   const [loras,setLoras]=useState<string[]>([]);
   const [modelLoading,setModelLoading]=useState(false);
+  const [mode,setMode]=useState<'image'|'animation'>('image');
+  const [template,setTemplate]=useState<any|null>(null);
   const [settings,setSettings]=useState({checkpoint:'',lora:'',loraStrength:0.8,width:768,height:1024,steps:28,cfg:7,seed:'',denoise:0.65,batchSize:1,negativePrompt:'low quality, distorted anatomy, duplicate subject, inconsistent character identity, unreadable text'});
 
   const countLabel=useMemo(()=>`${characters.length} character${characters.length===1?'':'s'}`,[characters.length]);
@@ -71,6 +73,7 @@ export default function Home() {
 
   async function generate(){
     if(!prompt.trim()){setStatus('Add a generation prompt first.');return}
+    if(mode==='animation' && !template){setStatus('Import a ComfyUI API workflow template for animation first.');return}
     const character=characters.find(c=>c.id===selectedId) || (form.name.trim()?{id:'draft',...form,image,created:new Date().toISOString()}:null);
     if(!character){setStatus('Create or select a character first.');return}
     setPolling(true); setJob({id:'',status:'submitting',outputs:[]}); setActive('outputs'); setStatus('Uploading reference and queueing ComfyUI workflow…');
@@ -78,7 +81,7 @@ export default function Home() {
       const body=new FormData();
       body.append('character',JSON.stringify({name:character.name,role:character.role,age:character.age,style:character.style,traits:character.traits,notes:character.notes}));
       body.append('scene',prompt);
-      body.append('mode','image');
+      body.append('mode',mode==='animation'?'video':'image');
       body.append('settings',JSON.stringify({...settings,seed:settings.seed===''?undefined:Number(settings.seed)}));
       const uploadFile=referenceFile || (character.image?.startsWith('data:') ? await dataUrlToFile(character.image,`${character.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase() || 'character'}-reference.png`) : null);\n      if(uploadFile) body.append('image',uploadFile,uploadFile.name);
       const r=await fetch('/api/comfyui/character',{method:'POST',body});
@@ -145,7 +148,9 @@ export default function Home() {
       <div className="generatePanel panel">
         <div className="pipelineRow"><span>REFERENCE</span><span>CHARACTER PROFILE</span><span>COMFYUI</span><span>OUTPUT</span></div>
         <label>Character<select value={selectedId} onChange={e=>{setSelectedId(e.target.value);const c=characters.find(x=>x.id===e.target.value);if(c){setForm({name:c.name,role:c.role,age:c.age,style:c.style,traits:c.traits,notes:c.notes});setImage(c.image)}}}><option value="">Choose a saved character…</option>{characters.map(c=><option key={c.id} value={c.id}>{c.name} — {c.role||'Character'}</option>)}</select></label>
+        <div className="modeSwitch"><button className={mode==='image'?'active':''} onClick={()=>setMode('image')}>Image</button><button className={mode==='animation'?'active':''} onClick={()=>setMode('animation')}>Animation</button></div>
         <label>Generation prompt<textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Describe the scene, pose, camera, lighting and animation intent…"/></label>
+        {mode==='animation'&&<div className="templateBox"><div><b>Animation workflow template</b><p>{template?.name||'No template imported'}</p></div><label className="templateImport">Import API JSON<input type="file" accept="application/json,.json" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{const parsed=JSON.parse(await file.text());setTemplate({name:file.name,workflow:parsed});setStatus('Animation workflow template loaded.');}catch{setStatus('Invalid workflow JSON. Export ComfyUI in API format.');}}}/></label></div>}
         <div className="controlsGrid">
           <label>Checkpoint<select value={settings.checkpoint} onChange={e=>setSettings({...settings,checkpoint:e.target.value})} disabled={modelLoading||checkpoints.length===0}><option value="">{modelLoading?'Discovering models…':'No checkpoint detected'}</option>{checkpoints.map(m=><option key={m}>{m}</option>)}</select></label>
           <label>LoRA<select value={settings.lora} onChange={e=>setSettings({...settings,lora:e.target.value})} disabled={loras.length===0}><option value="">None</option>{loras.map(m=><option key={m}>{m}</option>)}</select></label>
@@ -158,8 +163,8 @@ export default function Home() {
           <label>Outputs<input type="number" min="1" max="4" value={settings.batchSize} onChange={e=>setSettings({...settings,batchSize:Number(e.target.value)})}/></label>
           <label className="wide">Negative prompt<textarea value={settings.negativePrompt} onChange={e=>setSettings({...settings,negativePrompt:e.target.value})}/></label>
         </div>
-        <div className="generationActions"><button className="primary" disabled={polling||!selectedId||comfy!=='connected'} onClick={generate}><Sparkles size={16}/> {polling?'Generating…':'Generate image'}</button><span>{status}</span></div>
-        <div className="future"><Film size={20}/><div><b>Next animation layer</b><p>Wan/AnimateDiff video generation is kept behind a workflow-template adapter so the app does not pretend there is one universal ComfyUI graph for every installed checkpoint and custom-node set.</p></div></div>
+        <div className="generationActions"><button className="primary" disabled={polling||!selectedId||comfy!=='connected'||(mode==='animation'&&!template)} onClick={generate}><Sparkles size={16}/> {polling?'Generating…':mode==='animation'?'Generate animation':'Generate image'}</button><span>{status}</span></div>
+        <div className="future"><Film size={20}/><div><b>Installation-specific animation engine</b><p>Import the API-format workflow exported from your own ComfyUI installation. The studio keeps the graph intact and can substitute prompt, reference image, seed and size tokens.</p></div></div>
       </div>
     </section>}
 
@@ -169,6 +174,6 @@ export default function Home() {
       {job.error&&<div className="errorBox">{job.error}</div>}
       {job.outputs.length>0?<div className="outputGrid">{job.outputs.map((o,i)=><article className="outputCard" key={`${o.filename}-${i}`}>{/\.(mp4|webm|mov|gif)$/i.test(o.filename)?<video src={o.url} controls playsInline/>:<img src={o.url} alt={o.filename}/>}<div><span>{o.filename}</span><a href={o.url} target="_blank" rel="noreferrer">Open output</a></div></article>)}</div>:job.status!=='error'&&<div className="empty small"><Loader2 className="spin"/><p>Waiting for ComfyUI to finish and expose the output file…</p></div>}</div>}
     </section>}
-    <footer><span>Animation Generation Studio</span><span>Characters · References · ComfyUI · Outputs</span><span>v0.5</span></footer>
+    <footer><span>Animation Generation Studio</span><span>Characters · References · ComfyUI · Outputs</span><span>v0.6</span></footer>
   </main>
 }
