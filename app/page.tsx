@@ -10,13 +10,13 @@ export default function Home(){
  return <main className="landing">
   <div className="landingGrid"/>
   <header className="siteNav">
-   <Link href="/" className="siteLogo"><span className="siteLogoMark"><Sparkles size={16}/></span><span>ANIMATION <b>GENERATION</b></span></Link>
+   <Link href="/" className="siteLogo"><span className="siteLogoMark"><Sparkles size={16}/></span><span>MOTION<b>A</b></span></Link>
    <nav className="siteLinks">{nav.map(([label,href])=><Link key={label} href={href}>{label}</Link>)}</nav>
    <div className="siteActions"><Link href="/login" className="siteSign">Sign in</Link><Link href="/signup" className="siteCta">Start creating <ArrowUpRight size={14}/></Link></div>
   </header>
   <motion.section className="landingHero" initial={{opacity:0}} animate={{opacity:1}} transition={{duration:.7}}>
    <div className="heroOrb heroOrbA"/><div className="heroOrb heroOrbB"/>
-   <div className="heroKicker"><span/> AI CHARACTER & ANIMATION STUDIO</div>
+   <div className="heroKicker"><span/> AI CHARACTER · VOICE · ANIMATION STUDIO</div>
    <h1>Make characters.<br/><em>Make them move.</em></h1>
    <p className="landingLead">A creative workspace for building consistent AI characters, generating scenes and turning still concepts into animation-ready workflows.</p>
    <div className="heroActions"><Link href="/signup" className="heroPrimary">Enter the studio <ArrowUpRight size={17}/></Link><Link href="/studio" className="heroSecondary"><Play size={14}/> Explore the workflow</Link></div>
@@ -36,6 +36,6 @@ export default function Home(){
    <div className="workflowLine"><div><b>01</b><strong>Define</strong><span>Identity & visual language</span></div><ChevronDown/><div><b>02</b><strong>Create</strong><span>Reference-led generation</span></div><ChevronDown/><div><b>03</b><strong>Direct</strong><span>Scenes, poses & camera</span></div><ChevronDown/><div><b>04</b><strong>Animate</strong><span>ComfyUI workflow bridge</span></div></div>
   </section>
   <section className="closingSection"><p className="eyebrow">YOUR NEXT FRAME</p><h2>Give the character<br/><em>a world to enter.</em></h2><Link href="/signup" className="heroPrimary">Start your workspace <ArrowUpRight size={17}/></Link></section>
-  <footer className="landingFooter"><span>Animation Generation Studio</span><span>Characters · Generation · Animation · Agent</span><span>18+ · v0.8</span></footer>
+  <footer className="landingFooter"><span>MOTIONA</span><span>Characters · Generation · Animation · Agent</span><span>18+ · LOCAL-FIRST · v0.8</span></footer>
  </main>
 }
