@@ -1,0 +1,1 @@
+import {NextResponse} from 'next/server';import {moderatePrompt} from '@/lib/prompt-safety';export async function POST(req:Request){try{const {prompt}=await req.json();return NextResponse.json(moderatePrompt(String(prompt||'')))}catch{return NextResponse.json({allowed:false,level:'block',reason:'Invalid moderation request.'},{status:400})}}
