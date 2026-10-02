@@ -27,12 +27,13 @@ Then open `http://localhost:3000`.
 ## Planned production integrations
 
 - ComfyUI API connection and workflow queue
-- Checkpoint / VAE / LoRA model library
+- Live checkpoint / VAE / LoRA model discovery from ComfyUI
+- Optional LoRA character/style conditioning with strength control
 - Civitai model metadata/import layer
 - Character persistence and gallery storage
 - Image-to-character workflows
 - Character-to-image workflows
-- Image-to-video / animation workflows
+- Image-to-video / animation workflows through imported, installation-specific ComfyUI workflow templates
 - Generation history and exports
 - GPU/VRAM diagnostics
 
