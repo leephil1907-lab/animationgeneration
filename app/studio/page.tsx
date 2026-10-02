@@ -5,17 +5,22 @@ import { useSearchParams } from 'next/navigation';
 import { ImagePlus, Sparkles, Wand2, Upload, UserRound, Film, SlidersHorizontal, Cpu, RefreshCw, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 import ChatPanel from '@/components/ChatPanel';
 
-type Character = { id:string; name:string; role:string; style:string; age:string; traits:string; notes:string; image:string|null; created:string };
+type Character = { id:string; name:string; role:string; style:string; age:string; traits:string; notes:string; image:string|null; voice?:string; faceConsent?:boolean; created:string };
 type Output = { filename:string; subfolder:string; type:string; url:string };
 type Job = { id:string; status:string; outputs:Output[]; error?:string };
 
-const emptyForm={name:'',role:'',age:'Adult',style:'Cinematic',traits:'',notes:''};
+const emptyForm={name:'',role:'',age:'Adult',style:'Cinematic',traits:'',notes:'',voice:'warm-female'};
+const voicePresets=[['warm-female','Warm female'],['deep-male','Deep male'],['soft-breathy','Soft / breathy'],['energetic','Energetic'],['calm-narrator','Calm narrator']] as const;
+const initialView='create' as const;
 
 export default function Home() {
   const [characters,setCharacters]=useState<Character[]>([]);
   const [active,setActive]=useState<'create'|'gallery'|'generate'|'outputs'|'chat'>(initialView);
   const [image,setImage]=useState<string|null>(null);
   const [referenceFile,setReferenceFile]=useState<File|null>(null);
+  const [faceConsent,setFaceConsent]=useState(false);
+  const [voiceSample,setVoiceSample]=useState<string|null>(null);
+  const [isPlaying,setIsPlaying]=useState(false);
   const [form,setForm]=useState(emptyForm);
   const [status,setStatus]=useState('Ready');
   const [comfy,setComfy]=useState<'checking'|'connected'|'offline'>('checking');
@@ -59,22 +64,53 @@ export default function Home() {
 
   function saveCharacter(){
     if(!form.name.trim()){setStatus('Give the character a name first.');return}
-    const c:Character={id:crypto.randomUUID(),...form,image,created:new Date().toISOString()};
+    if(image&&!faceConsent){setStatus('Please confirm the face-reference safety checkbox.');return}
+    const c:Character={id:crypto.randomUUID(),...form,image,faceConsent,created:new Date().toISOString()};
     setCharacters(p=>[c,...p]); setSelectedId(c.id); setStatus('Character saved locally.'); setActive('gallery');
   }
 
   function useCharacter(c:Character){
-    setForm({name:c.name,role:c.role,age:c.age,style:c.style,traits:c.traits,notes:c.notes});
+    setForm({name:c.name,role:c.role,age:c.age,style:c.style,traits:c.traits,notes:c.notes,voice:c.voice||'warm-female'});
     setImage(c.image);
+    setFaceConsent(Boolean(c.faceConsent));
+    setVoiceSample(null);
     setReferenceFile(null);
     setSelectedId(c.id);
     setActive('generate');
     setStatus('Character loaded. Re-select its reference image before generation if needed.');
   }
 
-  function clearStudio(){setImage(null);setReferenceFile(null);setForm(emptyForm);setStatus('Studio cleared.');}\n\n  async function dataUrlToFile(dataUrl:string,name:string){ const r=await fetch(dataUrl); const blob=await r.blob(); return new File([blob],name,{type:blob.type||'image/png'}); }
+  function clearStudio(){setImage(null);setReferenceFile(null);setFaceConsent(false);setVoiceSample(null);setForm(emptyForm);setStatus('Studio cleared.');}
+
+  async function playSample(){
+    const text='Hello, I am '+(form.name||'your character')+'. '+(form.traits||form.notes||'Ready when you are.');
+    setIsPlaying(true);
+    try{
+      const res=await fetch('/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,voice:form.voice})});
+      if(res.ok){
+        const url=URL.createObjectURL(await res.blob());
+        const audio=new Audio(url);
+        audio.onended=()=>{setIsPlaying(false);URL.revokeObjectURL(url)};
+        audio.onerror=()=>{URL.revokeObjectURL(url);setIsPlaying(false)};
+        await audio.play();
+        return;
+      }
+    }catch{}
+    if(typeof window!=='undefined'&&'speechSynthesis' in window){
+      window.speechSynthesis.cancel();
+      const utter=new SpeechSynthesisUtterance(text);
+      utter.rate=.95;
+      utter.pitch=form.voice?.includes('deep')?.8:form.voice?.includes('soft')?1.15:1.05;
+      utter.onend=()=>setIsPlaying(false);
+      utter.onerror=()=>setIsPlaying(false);
+      window.speechSynthesis.speak(utter);
+    }else setIsPlaying(false);
+  }
+
+  async function dataUrlToFile(dataUrl:string,name:string){ const r=await fetch(dataUrl); const blob=await r.blob(); return new File([blob],name,{type:blob.type||'image/png'}); }
 
   async function generate(){
+    if(image&&!faceConsent){setStatus('Please confirm the face-reference safety checkbox.');return}
     if(!prompt.trim()){setStatus('Add a generation prompt first.');return}
     if(mode==='animation' && !template){setStatus('Import a ComfyUI API workflow template for animation first.');return}
     const character=characters.find(c=>c.id===selectedId) || (form.name.trim()?{id:'draft',...form,image,created:new Date().toISOString()}:null);
@@ -141,6 +177,7 @@ export default function Home() {
             {image?<img src={image} alt="Character reference"/>:<><div className="uploadIcon"><Upload size={22}/></div><strong>Drop an image here</strong><span>or browse your device gallery</span><small>PNG, JPG, WEBP · local preview</small></>}
             <input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>onUpload(e.target.files?.[0])}/>
           </label>
+          {image&&<label className="faceSafety"><input type="checkbox" checked={faceConsent} onChange={e=>setFaceConsent(e.target.checked)}/><span>I confirm this is <strong>my own face</strong> or a fully <strong>synthetic / AI-generated face</strong>. I do not upload real people’s faces without consent.</span></label>}
           {image&&<button className="textBtn" onClick={()=>{setImage(null);setReferenceFile(null)}}>Remove reference</button>}
           <div className="privacy"><span>LOCAL-FIRST UNTIL SUBMIT</span><p>The image stays in the browser until you press Generate. At that point it is uploaded to the configured ComfyUI instance.</p></div>
         </section>
@@ -152,6 +189,9 @@ export default function Home() {
             <label>Visual style<select value={form.style} onChange={e=>setForm({...form,style:e.target.value})}><option>Cinematic</option><option>Anime</option><option>Illustrated</option><option>Stylized 3D</option><option>Photoreal</option></select></label>
             <label className="wide">Traits & appearance<textarea value={form.traits} onChange={e=>setForm({...form,traits:e.target.value})} placeholder="Hair, clothing, colors, body language, distinctive features…"/></label>
             <label className="wide">Character direction<textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Personality, voice, movement, story role, animation notes…"/></label>
+            <label className="wide">Voice preset<select value={form.voice} onChange={e=>setForm({...form,voice:e.target.value})}>{voicePresets.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+            <label className="wide">Voice sample <span className="fieldHint">optional · under 5 MB</span><div className="voiceSampleRow"><input type="file" accept="audio/mpeg,audio/wav,audio/webm,audio/ogg" onChange={e=>{const file=e.target.files?.[0];if(!file)return;if(file.size>5*1024*1024){setStatus('Voice sample must be under 5 MB.');return}const reader=new FileReader();reader.onload=()=>setVoiceSample(String(reader.result));reader.readAsDataURL(file)}}/>{voiceSample&&<><audio src={voiceSample} controls style={{height:32}}/><button type="button" className="textBtn" onClick={()=>setVoiceSample(null)}>Remove</button></>}</div></label>
+            <label className="wide">Preview voice<button type="button" className="secondary" style={{marginTop:8}} disabled={!form.name||isPlaying} onClick={playSample}>{isPlaying?'Playing…':'Play sample'}</button></label>
           </div>
         </section>
       </div>
@@ -166,7 +206,7 @@ export default function Home() {
     {active==='generate'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><Cpu size={14}/> GENERATION PIPELINE</p><h1>Generate.</h1><p className="sub">Select a saved character, add a scene, and the studio will upload the optional reference image, queue a character-aware ComfyUI image workflow, then poll for the finished output.</p></div><button className="secondary" onClick={checkComfy}><RefreshCw size={15}/> Refresh</button></div>
       <div className="generatePanel panel">
         <div className="pipelineRow"><span>REFERENCE</span><span>CHARACTER PROFILE</span><span>COMFYUI</span><span>OUTPUT</span></div>
-        <label>Character<select value={selectedId} onChange={e=>{setSelectedId(e.target.value);const c=characters.find(x=>x.id===e.target.value);if(c){setForm({name:c.name,role:c.role,age:c.age,style:c.style,traits:c.traits,notes:c.notes});setImage(c.image)}}}><option value="">Choose a saved character…</option>{characters.map(c=><option key={c.id} value={c.id}>{c.name} — {c.role||'Character'}</option>)}</select></label>
+        <label>Character<select value={selectedId} onChange={e=>{setSelectedId(e.target.value);const c=characters.find(x=>x.id===e.target.value);if(c){setForm({name:c.name,role:c.role,age:c.age,style:c.style,traits:c.traits,notes:c.notes,voice:c.voice||'warm-female'});setImage(c.image);setFaceConsent(Boolean(c.faceConsent));setVoiceSample(null)}}}><option value="">Choose a saved character…</option>{characters.map(c=><option key={c.id} value={c.id}>{c.name} — {c.role||'Character'}</option>)}</select></label>
         <div className="modeSwitch"><button className={mode==='image'?'active':''} onClick={()=>setMode('image')}>Image</button><button className={mode==='animation'?'active':''} onClick={()=>setMode('animation')}>Animation</button></div>
         <label>Generation prompt<textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Describe the scene, pose, camera, lighting and animation intent…"/></label>
         {mode==='animation'&&<div className="templateBox"><div><b>Animation workflow template</b><p>{template?.name||'No template imported'}</p></div><label className="templateImport">Import API JSON<input type="file" accept="application/json,.json" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;try{const parsed=JSON.parse(await file.text());setTemplate({name:file.name,workflow:parsed});setStatus('Animation workflow template loaded.');}catch{setStatus('Invalid workflow JSON. Export ComfyUI in API format.');}}}/></label></div>}
@@ -187,7 +227,7 @@ export default function Home() {
       </div>
     </section>}
 
-    {active==='chat'&&<ChatPanel/>}
+    {active==='chat'&&<ChatPanel activeCharacter={characters.find(c=>c.id===selectedId)||null}/>}
 
     {active==='outputs'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><Sparkles size={14}/> OUTPUT GALLERY</p><h1>Generated work.</h1></div><button className="secondary" onClick={()=>setActive('generate')}>Back to generation</button></div>
       {!job?<div className="empty"><Sparkles size={32}/><h2>No generation in this session</h2><p>Run a ComfyUI generation to see the result here.</p><button className="primary" onClick={()=>setActive('generate')}>Open generator</button></div>:
