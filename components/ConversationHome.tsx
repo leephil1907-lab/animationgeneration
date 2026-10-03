@@ -22,6 +22,13 @@ const characters:Character[]=[
 const starters=['Help me design her next scene','Create a cinematic portrait concept','Build a 30-second video sequence','Give me three outfit directions'];
 const STORAGE='motiona-conversations';
 
+function CharacterVisual({character,compact=false}:{character:Character;compact?:boolean}){
+  const className='characterVisual '+(compact?'compact ':'')+'characterVisual-'+character.id;
+  return <span className={className} style={{'--accent':character.accent} as React.CSSProperties} aria-hidden="true">
+    <span className="portraitAura"/><span className="portraitLight"/><span className="portraitHead"/><span className="portraitShoulder"/><span className="portraitGrain"/>
+  </span>;
+}
+
 export default function ConversationHome(){
   const [selected,setSelected]=useState(characters[0]);
   const [messages,setMessages]=useState<ChatMessage[]>([]);
