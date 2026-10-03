@@ -92,13 +92,14 @@ export default function ConversationHome(){
 
   return <main className="conversationApp">
     <aside className="conversationSidebar">
+      <nav className="mobilePrimaryNav" aria-label="Primary"><Link href="/">Discover</Link><Link href="/studio">Create</Link><Link href="/animate">Animate</Link><Link href="/gallery">Library</Link></nav>
       <div className="conversationBrand"><Link href="/"><span className="conversationMark">M</span><b>MOTION<span>A</span></b></Link><span className="conversationAge">18+</span></div>
       <button className="conversationNew" onClick={newConversation}><Plus size={15}/> New conversation</button>
       <div className="conversationSideLabel">CHARACTERS</div>
       <div className="characterList">{characters.map(c=><button key={c.id} className={c.id===selected.id?'characterItem active':'characterItem'} onClick={()=>switchCharacter(c)}><span className="characterAvatar" style={{'--accent':c.accent} as React.CSSProperties}>{c.initials}</span><span><b>{c.name}</b><small>{c.tagline}</small></span></button>)}</div>
       <div className="conversationSideLabel recentLabel">RECENT</div>
       <div className="conversationHistory">{history.slice(0,7).map(c=><button key={c.id} onClick={()=>loadConversation(c)}><b>{c.title}</b><small>{characters.find(x=>x.id===c.characterId)?.name||'Character'}</small></button>)}</div>
-      <div className="conversationSideLinks"><Link href="/studio"><Wand2 size={14}/> Studio</Link><Link href="/storyboard"><Clapperboard size={14}/> Storyboard</Link><Link href="/gallery"><Film size={14}/> My creations</Link><Link href="/animate"><Video size={14}/> Video engine</Link></div>
+      <div className="conversationSideLinks"><Link href="/"><Sparkles size={14}/> Discover</Link><Link href="/studio"><Wand2 size={14}/> Studio</Link><Link href="/storyboard"><Clapperboard size={14}/> Storyboard</Link><Link href="/gallery"><Film size={14}/> My creations</Link><Link href="/animate"><Video size={14}/> Video engine</Link></div>
     </aside>
 
     <section className="conversationMain">
