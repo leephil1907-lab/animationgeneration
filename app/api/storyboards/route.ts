@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { requireSameOrigin } from '@/lib/api-security';
+import { requireServerUser } from '@/lib/server-auth';
 import { byUpdatedDesc, deleteRecord, listRecords, readRecord, storageLabel, writeRecord } from '@/lib/storage';
 import { CAMERA_MOVES, type Shot, type Storyboard } from '@/lib/storyboard';
 
@@ -67,12 +69,14 @@ function sanitize(input: any): Storyboard | null {
 
 /** GET /api/storyboards — list all, or ?id= for one. */
 export async function GET(request: Request) {
-  try {
+  const denied = requireSameOrigin(request); if (denied) return denied;
+  try { const user = await requireServerUser();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (id) {
       const board = await readRecord<Storyboard>(COLLECTION, id);
+      if (board && board.owner !== user.id) return NextResponse.json({ error: 'Storyboard not found' }, { status: 404 });
       if (!board) return NextResponse.json({ error: 'Storyboard not found' }, { status: 404 });
       return NextResponse.json({ storyboard: board, storage: storageLabel() });
     }
@@ -86,12 +90,15 @@ export async function GET(request: Request) {
 
 /** POST /api/storyboards — create or update one board. */
 export async function POST(request: Request) {
-  try {
+  const denied = requireSameOrigin(request); if (denied) return denied;
+  try { const user = await requireServerUser();
     const body = await request.json();
     const board = sanitize(body?.storyboard ?? body);
     if (!board) return NextResponse.json({ error: 'A storyboard with an id is required' }, { status: 400 });
 
+    board.owner = user.id;
     const existing = await readRecord<Storyboard>(COLLECTION, board.id);
+    if (existing && existing.owner !== user.id) return NextResponse.json({ error: 'Storyboard not found' }, { status: 404 });
     const merged: Storyboard = existing ? { ...existing, ...board, createdAt: existing.createdAt } : board;
 
     await writeRecord(COLLECTION, merged.id, merged);
@@ -102,10 +109,13 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  try {
+  const denied = requireSameOrigin(request); if (denied) return denied;
+  try { const user = await requireServerUser();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Pass ?id= to delete a storyboard' }, { status: 400 });
+    const existing = await readRecord<Storyboard>(COLLECTION, id);
+    if (!existing || existing.owner !== user.id) return NextResponse.json({ error: 'Storyboard not found' }, { status: 404 });
     const removed = await deleteRecord(COLLECTION, id);
     return NextResponse.json({ ok: true, removed });
   } catch (error) {
