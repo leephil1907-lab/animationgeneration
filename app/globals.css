@@ -29,6 +29,13 @@
 .micBtn{width:44px;height:44px;border:1px solid #d8ded3;background:#fff;display:grid;place-items:center;color:#555;flex:none}
 .micBtn:disabled{opacity:.5}
 .micBtn.recording{background:#ff4d4d;border-color:#ff4d4d;color:#fff;animation:pulse 1.2s infinite}
+/* vs-chat-input composer inside the studio chat */
+.chatComposerWrap{border-top:1px solid #dfe3da;padding:12px 16px;background:rgba(255,255,255,.6)}
+.chatComposerWrap .vs-chat-input{--vs-chat-input-accent:#8b5cf6;--vs-chat-input-bg:#fff;--vs-chat-input-ink:#10130f;--vs-chat-input-dim:#8b9086;--vs-chat-input-chip:#f2effa;--vs-chat-input-radius:14px;--vs-chat-input-lines:6;--vs-chat-input-font:'General Sans',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;box-shadow:none}
+.chatComposerWrap .vs-chat-input:focus-within{box-shadow:0 0 0 3px rgba(139,92,246,.10)}
+.micInBar{width:32px;height:32px;border-radius:9px;border:0;background:none;color:#8b9086}
+.micInBar:hover{background:rgba(16,19,15,.07);color:#10130f}
+.micInBar.recording{background:#ff4d4d;color:#fff}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,.45)}50%{box-shadow:0 0 0 8px rgba(255,77,77,0)}}
 .speakBtn{background:none;border:0;color:#888;padding:2px 6px;cursor:pointer;align-self:flex-start}
 .speakBtn:hover{color:#8b5cf6}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect,useRef,useState } from 'react';
-import { MessageSquare,Send,Sparkles,Bot,User,ChevronDown,Plus,Wrench,Volume2,Mic,Square } from 'lucide-react';
+import { MessageSquare,Sparkles,Bot,User,ChevronDown,Plus,Wrench,Volume2,Mic,Square } from 'lucide-react';
+import ChatComposer, { type VsChatInputApi } from '@/components/ChatComposer';
 import type { Conversation,Message,ToolCall } from '@/lib/types';
 
 const STORAGE_KEY='ags-conversations';
@@ -26,7 +27,9 @@ function ToolCard({tool}:{tool:ToolCall}){
 type ActiveCharacter={name:string;traits?:string;notes?:string;voice?:string}|null;
 
 export default function ChatPanel({activeCharacter}:{activeCharacter?:ActiveCharacter}){
-  const [conversations,setConversations]=useState<Conversation[]>([]),[activeId,setActiveId]=useState(''),[input,setInput]=useState(''),[sending,setSending]=useState(false),[recording,setRecording]=useState(false),[transcribing,setTranscribing]=useState(false);
+  const [conversations,setConversations]=useState<Conversation[]>([]),[activeId,setActiveId]=useState(''),[sending,setSending]=useState(false),[recording,setRecording]=useState(false),[transcribing,setTranscribing]=useState(false);
+  const composerRef=useRef<VsChatInputApi|null>(null);
+  const abortRef=useRef<AbortController|null>(null);
   const mediaRecorder=useRef<MediaRecorder|null>(null);
   const chunks=useRef<Blob[]>([]);
   const bottomRef=useRef<HTMLDivElement>(null);
@@ -41,28 +44,30 @@ export default function ChatPanel({activeCharacter}:{activeCharacter?:ActiveChar
     const next=[c,...conversations];setConversations(next);saveConversations(next);setActiveId(c.id);
   }
 
-  async function send(text?:string,isVoice=false){
-    const content=(text??input).trim();
-    if(!content||sending)return;
+  async function send(content:string,opts:{isVoice?:boolean;files?:{name:string}[];model?:string;signal?:AbortSignal}={}){
+    const body=(opts.isVoice?'🎤 ':'')+content.trim();
+    const attachments=opts.files&&opts.files.length? '\n📎 '+opts.files.map(f=>f.name).join(', '):'';
+    if(!body||sending)return;
     let conv=active;
     if(!conv){
       const now=new Date().toISOString();
-      conv={id:crypto.randomUUID(),title:content.slice(0,40),createdAt:now,updatedAt:now,messages:[]};
+      conv={id:crypto.randomUUID(),title:body.slice(0,40),createdAt:now,updatedAt:now,messages:[]};
       setConversations(prev=>{const next=[conv!,...prev];saveConversations(next);return next});setActiveId(conv.id);
     }
-    const userMsg:Message={id:crypto.randomUUID(),role:'user',content:isVoice?'🎤 '+content:content,createdAt:new Date().toISOString()};
-    setInput('');setSending(true);
-    setConversations(prev=>{const next=prev.map(c=>c.id===conv!.id?{...c,title:c.messages.length===0?content.slice(0,40):c.title,updatedAt:new Date().toISOString(),messages:[...c.messages,userMsg]}:c);saveConversations(next);return next});
+    const userMsg:Message={id:crypto.randomUUID(),role:'user',content:body+attachments,createdAt:new Date().toISOString()};
+    setSending(true);
+    setConversations(prev=>{const next=prev.map(c=>c.id===conv!.id?{...c,title:c.messages.length===0?body.slice(0,40):c.title,updatedAt:new Date().toISOString(),messages:[...c.messages,userMsg]}:c);saveConversations(next);return next});
     try{
-      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:content,conversationId:conv.id,character:activeCharacter||null})});
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:body,conversationId:conv.id,character:activeCharacter||null,model:opts.model||undefined}),signal:opts.signal});
       const data=await res.json();if(!res.ok)throw new Error(data.error||'Chat failed');
       const assistantMsg=data.message as Message;
       setConversations(prev=>{const next=prev.map(c=>c.id===conv!.id?{...c,updatedAt:new Date().toISOString(),messages:[...c.messages,assistantMsg]}:c);saveConversations(next);return next});
       if(activeCharacter)speak(assistantMsg.content,activeCharacter.voice||'');
     }catch(e){
+      if(e instanceof DOMException&&e.name==='AbortError')return; // stopped by the composer
       const errMsg:Message={id:crypto.randomUUID(),role:'assistant',content:'Error: '+(e instanceof Error?e.message:String(e)),createdAt:new Date().toISOString()};
       setConversations(prev=>{const next=prev.map(c=>c.id===conv!.id?{...c,messages:[...c.messages,errMsg]}:c);saveConversations(next);return next});
-    }finally{setSending(false)}
+    }finally{setSending(false);abortRef.current=null;composerRef.current?.setBusy(false)}
   }
 
   async function toggleRecording(){
@@ -87,7 +92,7 @@ export default function ChatPanel({activeCharacter}:{activeCharacter?:ActiveChar
           if(!res.ok)throw new Error(data.error||'Transcription failed');
           const transcript=String(data.text||'').trim();
           if(!transcript)throw new Error('No speech was detected.');
-          await send(transcript,true);
+          await send(transcript,{isVoice:true});
         }catch(e){alert(e instanceof Error?e.message:'Unable to transcribe voice note.')}
         finally{setTranscribing(false)}
       };
@@ -108,10 +113,27 @@ export default function ChatPanel({activeCharacter}:{activeCharacter?:ActiveChar
       active.messages.map(m=><div key={m.id} className={'msg '+m.role}><div className="msgAvatar">{m.role==='user'?<User size={16}/>:<Bot size={16}/>}</div><div className="msgBody"><div className="msgContent">{m.content}</div>{m.role==='assistant'&&<button type="button" className="speakBtn" onClick={()=>speak(m.content,activeCharacter?.voice||'')} title="Play as character"><Volume2 size={14}/></button>}{m.toolCalls?.map(t=><ToolCard key={t.id} tool={t}/>)}<div className="msgTime">{new Date(m.createdAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div></div>)}
       {transcribing&&<div className="msg assistant"><div className="msgAvatar"><Mic size={16}/></div><div className="msgBody"><div className="typing">Transcribing voice note…</div></div></div>}
       {sending&&<div className="msg assistant"><div className="msgAvatar"><Bot size={16}/></div><div className="msgBody"><div className="typing">Thinking / running tools…</div></div></div>}<div ref={bottomRef}/>
-    </div><div className="chatInputBar">
-      <button type="button" className={recording?'micBtn recording':'micBtn'} onClick={toggleRecording} disabled={transcribing} title={recording?'Stop recording':'Voice note'}>{recording?<Square size={16}/>:<Mic size={16}/>}</button>
-      <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}}} placeholder={recording?'Recording…':transcribing?'Transcribing…':'Type or use the mic…'} rows={1} disabled={recording||transcribing}/>
-      <button className="primary sendBtn" disabled={!input.trim()||sending||transcribing} onClick={()=>send()}><Send size={16}/></button>
+    </div><div className="chatComposerWrap">
+      <ChatComposer ref={composerRef}
+        placeholder={recording?'Recording…':transcribing?'Transcribing…':'Ask anything, or drop a file…'}
+        accept="image/*,.pdf,.txt" maxFiles={8} disabled={recording||transcribing}
+        extraBar={<button type="button" className={recording?'micBtn recording':'micBtn micInBar'} onClick={toggleRecording} disabled={transcribing} title={recording?'Stop recording':'Voice note'} aria-label={recording?'Stop recording':'Voice note'}>{recording?<Square size={14}/>:<Mic size={14}/>}</button>}
+        onSubmit={(detail)=>{
+          const text=detail.text||(detail.files.length?'Sharing '+detail.files.length+' file'+(detail.files.length>1?'s':'')+'.':'');
+          if(!text)return;
+          abortRef.current=new AbortController();
+          void send(text,{files:detail.files,model:detail.model,signal:abortRef.current.signal});
+        }}
+        onStop={()=>abortRef.current?.abort()}
+        onFiles={(added,api)=>{
+          for(const {id,file} of added){
+            const reader=new FileReader();
+            reader.onprogress=e=>{if(e.lengthComputable)api.setProgress(id,e.loaded/Math.max(1,e.total))};
+            reader.onload=()=>api.setProgress(id,1);
+            reader.onerror=()=>api.setProgress(id,1);
+            reader.readAsArrayBuffer(file);
+          }
+        }}/>
     </div></div>
   </section>;
 }

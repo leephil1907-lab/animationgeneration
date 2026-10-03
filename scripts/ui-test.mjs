@@ -10,7 +10,8 @@
  */
 
 import puppeteer from 'puppeteer';
-import { mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,10 +37,20 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({
   headless: 'new',
-  args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  args: [
+    '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
+    // this sandbox has ~2 GB RAM: keep Chromium's footprint small enough that
+    // next-server + worker + browser fit without swap-thrashing the navigations
+    '--disable-gpu', '--mute-audio', '--renderer-process-limit=2',
+    '--disable-background-networking', '--disable-component-update',
+    '--disable-sync', '--no-first-run', '--no-default-browser-check', '--hide-scrollbars',
+  ],
 });
 
+
 const page = await browser.newPage();
+page.setDefaultTimeout(45000);
+page.setDefaultNavigationTimeout(120000);
 await page.setViewport({ width: 1440, height: 1000 });
 
 const consoleErrors = [];
@@ -63,7 +74,7 @@ page.on('requestfailed', (req) => {
 try {
   /* ------------------------------------------------------------- age gate */
   section('1. Storyboard loads and hydrates');
-  await page.goto(`${APP}/storyboard`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/storyboard`, { waitUntil: 'domcontentloaded', timeout: 120000 });
 
   // The gate mounts with hydration; wait for it OR the content so a slow
   // first compile cannot race the presence check.
@@ -91,7 +102,7 @@ try {
     const cleanContext = await browser.createBrowserContext();
     const fresh = await cleanContext.newPage();
     await fresh.goto(`${APP}/`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await fresh.waitForSelector('.ageEnter', { timeout: 15000 })
+    await fresh.waitForSelector('.ageEnter', { timeout: 45000 })
       .then(() => ok('fresh profile is gated before any content'))
       .catch(() => bad('fresh profile is gated before any content', 'no gate'));
 
@@ -240,8 +251,8 @@ try {
     ? ok(`board written to localStorage (${parsed.length} board(s))`)
     : bad('board written to localStorage', String(stored).slice(0, 120));
 
-  await page.reload({ waitUntil: 'networkidle2', timeout: 45000 });
-  await page.waitForSelector('.shot', { timeout: 15000 }).catch(() => {});
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForSelector('.shot', { timeout: 30000 }).catch(() => {});
 
   const restoredShots = await page.$$eval('.shot', (els) => els.length).catch(() => 0);
   check('shot survived the reload', restoredShots, 1);
@@ -262,7 +273,7 @@ try {
 
   /* --------------------------------------------------------------- gallery */
   section('7. Gallery shows the rendered output');
-  await page.goto(`${APP}/gallery`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/gallery`, { waitUntil: 'domcontentloaded', timeout: 120000 });
 
   let cards = 0;
   for (let i = 0; i < 20; i += 1) {
@@ -392,7 +403,8 @@ try {
 
   /* --------------------------------------------------------- animate screen */
   section('8. Animate screen');
-  await page.goto(`${APP}/animate`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/animate`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForSelector('.productIntro', { timeout: 20000 });
   const animateHeading = await page.$eval('.productIntro h1', (el) => el.textContent.trim()).catch(() => '');
   check('animate screen renders', animateHeading, 'Turn shots into motion.');
   const queueDisabled = await page.$eval('.jobLaunch .primary', (el) => el.disabled).catch(() => null);
@@ -401,7 +413,7 @@ try {
 
   /* ------------------------------------------------- accounts + dashboard */
   section('10. Signup leads to a dashboard');
-  await page.goto(`${APP}/signup`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/signup`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('.authForm', { timeout: 15000 });
   await sleep(600); // let hydration attach the controlled-input handlers
 
@@ -440,7 +452,8 @@ try {
   /sable@example.com/.test(chip) ? ok(`account chip shows the signed-in email (${chip})`) : bad('account chip shows the signed-in email', chip);
 
   /* chip follows onto workspace screens */
-  await page.goto(`${APP}/storyboard`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/storyboard`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForSelector('.accountChip', { timeout: 20000 });
   const chipOnProduct = await page.$eval('.accountChip a', (el) => el.textContent.trim()).catch(() => '');
   /sable@example.com/.test(chipOnProduct)
     ? ok('workspace headers carry the account chip')
@@ -456,14 +469,15 @@ try {
   owned === 'sable@example.com' ? ok('new sequences are attributed to the account') : bad('new sequences are attributed to the account', owned);
 
   /* sign out then guarded redirect */
-  await page.goto(`${APP}/dashboard`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForSelector('.dashFooter .secondary', { timeout: 30000 });
   await page.click('.dashFooter .secondary');
   await page.waitForFunction(() => window.location.pathname === '/', { timeout: 8000 })
     .then(() => ok('sign out returns to the landing page'))
     .catch(async () => bad('sign out returns to the landing page', await page.evaluate(() => window.location.pathname)));
 
-  await page.goto(`${APP}/login`, { waitUntil: 'networkidle2', timeout: 45000 }); // warm the route compile
-  await page.goto(`${APP}/dashboard`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/login`, { waitUntil: 'domcontentloaded', timeout: 120000 }); // warm the route compile
+  await page.goto(`${APP}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForFunction(() => window.location.pathname === '/login', { timeout: 15000 })
     .then(() => ok('dashboard is guarded — signed-out visitors bounce to /login'))
     .catch(async () => bad('dashboard is guarded', await page.evaluate(() => window.location.pathname)));
@@ -491,7 +505,9 @@ try {
     const s = JSON.parse(localStorage.getItem('motiona-session') || 'null');
     if (s) localStorage.removeItem('motiona-session');
   });
-  await page.goto(`${APP}/login`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/login`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForSelector('.authForm', { timeout: 20000 });
+  await sleep(400);
   await page.evaluate(() => {
     const set = (el, value) => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -513,7 +529,7 @@ try {
   /* -------------------------------------------------------- console health */
   section('11. Work survives a cleared browser (server-side records)');
   /* section 10 ended on a deliberately failed login, so sign back in first */
-  await page.goto(`${APP}/login`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/login`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('.authForm', { timeout: 15000 });
   await sleep(500);
   await page.evaluate(() => {
@@ -529,7 +545,7 @@ try {
   await page.click('.authSubmit');
   await page.waitForFunction(() => window.location.pathname === '/dashboard', { timeout: 20000 });
 
-  await page.goto(`${APP}/storyboard`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/storyboard`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('.sequencePanel', { timeout: 15000 });
   await sleep(800);
 
@@ -552,7 +568,7 @@ try {
     ? ok('renamed sequence reached the server store')
     : bad('renamed sequence reached the server store', serverTitles.join(' | '));
 
-  await page.goto(`${APP}/dashboard`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('.dashTiles', { timeout: 20000 });
   await sleep(1200); // allow the server merge to land
   const rowsBeforeWipe = await page.$$eval('.dashRow b', (els) => els.map((e) => e.textContent.trim()));
@@ -562,13 +578,13 @@ try {
 
   /* wipe the browser: accounts, session, cached boards and cached jobs all go */
   await page.evaluate(() => window.localStorage.clear());
-  await page.reload({ waitUntil: 'networkidle2', timeout: 45000 });
-  await page.waitForSelector('.ageEnter', { timeout: 10000 });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForSelector('.ageEnter', { timeout: 30000 });
   await page.click('.ageEnter');
   await sleep(600);
   ok('age gate re-appears after a storage wipe (never skipped)');
 
-  await page.goto(`${APP}/signup`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.goto(`${APP}/signup`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.waitForSelector('.authForm', { timeout: 15000 });
   await sleep(600);
   await page.evaluate(() => {
@@ -603,14 +619,88 @@ try {
 
   await page.screenshot({ path: path.join(SHOTS, '07-persistence.png'), fullPage: true });
 
-  await page.goto(`${APP}/storyboard`, { waitUntil: 'networkidle2', timeout: 45000 });
-  await page.waitForSelector('.sequencePanel', { timeout: 15000 });
+  await page.goto(`${APP}/storyboard`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForSelector('.sequencePanel', { timeout: 30000 });
   await sleep(1500);
   const rehydratedTitle = await page.$eval('.sequenceFields label input', (el) => el.value);
   rehydratedTitle === 'Harbour Survivor Cut'
     ? ok('storyboard hydrates the server copy into an empty browser')
     : bad('storyboard hydrates the server copy into an empty browser', rehydratedTitle);
 
+
+  section('12. Studio chat composer (vs-chat-input)');
+  await page.goto(`${APP}/studio?view=chat`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForSelector('.vs-chat-input', { timeout: 30000 });
+  ok('composer renders in the studio chat');
+
+  /* keyboard-complete model picker */
+  await page.click('.vs-chat-input-model-btn');
+  await page.waitForFunction(() => !document.querySelector('.vs-chat-input-menu')?.hidden, { timeout: 8000 });
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  const modelName = await page.$eval('.vs-chat-input-model-name', (el) => el.textContent.trim());
+  modelName === 'Loom 3 Deep'
+    ? ok('model picker is keyboard-complete (arrows + Enter select)')
+    : bad('model picker is keyboard-complete', modelName);
+
+  /* Enter sends, the box clears, and send morphs to stop while busy */
+  await page.evaluate(() => {
+    window.__sawBusy = false;
+    const form = document.querySelector('.vs-chat-input');
+    new MutationObserver(() => { if (form.dataset.busy === 'true') window.__sawBusy = true; })
+      .observe(form, { attributes: true, attributeFilter: ['data-busy'] });
+  });
+  await page.click('.vs-chat-input-text');
+  await page.keyboard.type('Generate a cinematic portrait of a cyberpunk detective');
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => {
+    const msgs = [...document.querySelectorAll('.msg.user .msgContent')];
+    return msgs.some((m) => m.textContent.includes('cyberpunk'));
+  }, { timeout: 10000 })
+    .then(() => ok('Enter sends the message into the conversation'))
+    .catch(() => bad('Enter sends the message into the conversation'));
+  const cleared = await page.$eval('.vs-chat-input-text', (el) => el.value);
+  cleared === '' ? ok('the box clears itself on submit') : bad('the box clears itself on submit', cleared);
+  const sawBusy = await page.evaluate(() => window.__sawBusy);
+  sawBusy ? ok('send morphs to stop while the reply generates') : bad('send morphs to stop while the reply generates');
+
+  /* Esc stops while busy (component contract, driven deterministically) */
+  const stopped = await page.evaluate(() => new Promise((resolve) => {
+    const form = document.querySelector('.vs-chat-input');
+    const textarea = form.querySelector('.vs-chat-input-text');
+    form.addEventListener('vs-chat-input:stop', () => resolve({ seen: true, busy: form.vsChatInput.busy }), { once: true });
+    form.vsChatInput.setBusy(true);
+    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    setTimeout(() => resolve({ seen: false, busy: form.vsChatInput.busy }), 1500);
+  }));
+  stopped.seen && stopped.busy === false
+    ? ok('Esc stops a busy generation and the button returns to send')
+    : bad('Esc stops a busy generation', JSON.stringify(stopped));
+
+  /* attach a file: chip appears and its upload ring completes */
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const tmp = path.join(os.tmpdir(), 'vs-attach.png');
+  writeFileSync(tmp, png);
+  const fileInput = await page.waitForSelector('.vs-chat-input input[type=file]', { timeout: 8000 });
+  await fileInput.uploadFile(tmp);
+  await page.waitForSelector('.vs-chat-input-chip', { timeout: 8000 });
+  await page.waitForFunction(() => document.querySelector('.vs-chat-input-chip')?.dataset.progress === '1', { timeout: 8000 })
+    .then(() => ok('attached file shows a chip and its upload ring completes'))
+    .catch(async () => bad('attached file shows a chip and its upload ring completes',
+      await page.$eval('.vs-chat-input-chip', (el) => el.dataset.progress).catch(() => 'no chip')));
+
+  /* Backspace in an empty box removes the last file */
+  await page.click('.vs-chat-input-text');
+  await page.keyboard.press('Backspace');
+  await page.waitForFunction(() => document.querySelectorAll('.vs-chat-input-chip').length === 0, { timeout: 8000 })
+    .then(() => ok('Backspace in an empty box removes the last file'))
+    .catch(() => bad('Backspace in an empty box removes the last file'));
+
+  /* send disabled while the box is empty */
+  const sendDisabled = await page.$eval('.vs-chat-input-send', (el) => el.disabled);
+  sendDisabled ? ok('send stays disabled while the box is empty') : bad('send stays disabled while the box is empty');
+
+  await page.screenshot({ path: path.join(SHOTS, '08-composer.png'), fullPage: true });
 
   section('9. Console and network health');
   const realErrors = consoleErrors.filter((t) => !/favicon|Download the React DevTools/i.test(t));

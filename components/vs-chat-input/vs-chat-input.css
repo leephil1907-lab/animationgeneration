@@ -1,0 +1,213 @@
+/* ============================================================================
+   vs-chat-input — AI chat composer
+   Markup contract and JS API: see components/vs-chat-input/vs-chat-input.js
+   Theme knobs (set on the form or any ancestor):
+     --vs-chat-input-accent  send fill + focus ring      --vs-chat-input-bg
+     --vs-chat-input-ink     primary text                --vs-chat-input-dim
+     --vs-chat-input-radius  shell radius                --vs-chat-input-width
+     --vs-chat-input-chip    file chip fill              --vs-chat-input-lines
+     --vs-chat-input-font
+   ========================================================================== */
+
+.vs-chat-input {
+  --_accent: var(--vs-chat-input-accent, #8b5cf6);
+  --_bg: var(--vs-chat-input-bg, #ffffff);
+  --_ink: var(--vs-chat-input-ink, #10130f);
+  --_dim: var(--vs-chat-input-dim, #878c80);
+  --_radius: var(--vs-chat-input-radius, 14px);
+  --_chip: var(--vs-chat-input-chip, #f2effa);
+  --_line: color-mix(in srgb, var(--_ink) 14%, transparent);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: var(--vs-chat-input-width, 100%);
+  padding: 10px 12px;
+  border: 1px solid var(--_line);
+  border-radius: var(--_radius);
+  background: var(--_bg);
+  color: var(--_ink);
+  font-family: var(--vs-chat-input-font, inherit);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--_ink) 6%, transparent);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.vs-chat-input:focus-within {
+  border-color: color-mix(in srgb, var(--_accent) 65%, var(--_line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--_accent) 14%, transparent);
+}
+.vs-chat-input[data-dragging="true"] { border-style: dashed; border-color: var(--_accent); }
+.vs-chat-input[data-disabled="true"] { opacity: .6; pointer-events: none; }
+
+.vs-chat-input[data-theme="dark"] {
+  --_bg: var(--vs-chat-input-bg, #17151c);
+  --_ink: var(--vs-chat-input-ink, #f2eff7);
+  --_dim: var(--vs-chat-input-dim, #8d8798);
+  --_chip: var(--vs-chat-input-chip, #241f31);
+  box-shadow: 0 14px 40px rgb(0 0 0 / .35);
+}
+
+/* ------------------------------------------------------------ file chips */
+.vs-chat-input-files { display: flex; flex-wrap: wrap; gap: 6px; }
+.vs-chat-input-files:empty { display: none; }
+
+.vs-chat-input-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 5px 8px 5px 5px;
+  border-radius: 999px;
+  background: var(--_chip);
+  color: var(--_ink);
+  font-size: 11px;
+  line-height: 1;
+  animation: vs-chip-in .34s cubic-bezier(.2, 1.4, .35, 1);
+}
+@keyframes vs-chip-in {
+  from { transform: scale(.72); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.vs-chat-input-chip .vs-chip-ring { width: 18px; height: 18px; flex: none; transform: rotate(-90deg); }
+.vs-chat-input-chip .vs-chip-ring circle { fill: none; stroke-width: 2.4; }
+.vs-chat-input-chip .vs-chip-ring .track { stroke: color-mix(in srgb, var(--_ink) 14%, transparent); }
+.vs-chat-input-chip .vs-chip-ring .bar { stroke: var(--_accent); stroke-linecap: round; transition: stroke-dashoffset .18s linear, stroke .2s ease; }
+.vs-chat-input-chip[data-progress="1"] .vs-chip-ring .bar { stroke: color-mix(in srgb, var(--_accent) 55%, var(--_ink)); }
+.vs-chat-input-chip .vs-chip-name { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.vs-chat-input-chip .vs-chip-size { color: var(--_dim); font-size: 10px; }
+.vs-chat-input-chip .vs-chip-x {
+  display: grid; place-items: center;
+  border: 0; background: none; color: var(--_dim);
+  padding: 3px; border-radius: 50%; cursor: pointer;
+}
+.vs-chat-input-chip .vs-chip-x:hover { color: var(--_ink); background: color-mix(in srgb, var(--_ink) 8%, transparent); }
+
+/* ------------------------------------------------------------ the box */
+.vs-chat-input-text {
+  display: block;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--_ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 3px 2px;
+  resize: none;
+  overflow-y: hidden;
+  height: calc(1.55em + 6px);
+  caret-color: var(--_accent);
+}
+.vs-chat-input-text::placeholder { color: var(--_dim); }
+.vs-chat-input-text:disabled { cursor: not-allowed; }
+
+/* ------------------------------------------------------------ bottom bar */
+.vs-chat-input-bar { display: flex; align-items: center; gap: 6px; }
+
+.vs-chat-input-attach,
+.vs-chat-input-model-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--_dim);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease;
+}
+.vs-chat-input-attach:hover,
+.vs-chat-input-model-btn:hover { background: color-mix(in srgb, var(--_ink) 7%, transparent); color: var(--_ink); }
+.vs-chat-input-model-btn[aria-expanded="true"] { background: color-mix(in srgb, var(--_accent) 12%, transparent); color: var(--_ink); }
+.vs-chat-input-model-btn .vs-model-chevron { transition: transform .18s ease; }
+.vs-chat-input-model-btn[aria-expanded="true"] .vs-model-chevron { transform: rotate(180deg); }
+
+/* ------------------------------------------------------------ model menu */
+.vs-chat-input-model { position: relative; }
+.vs-chat-input-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 40;
+  min-width: 250px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--_line);
+  border-radius: 12px;
+  background: var(--_bg);
+  box-shadow: 0 22px 60px color-mix(in srgb, var(--_ink) 18%, transparent);
+  animation: vs-menu-in .18s cubic-bezier(.2, 1.2, .35, 1);
+}
+.vs-chat-input-menu[hidden] { display: none; }
+@keyframes vs-menu-in {
+  from { transform: translateY(6px) scale(.98); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+.vs-chat-input-menu li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--_ink);
+  cursor: pointer;
+  outline: none;
+}
+.vs-chat-input-menu li small { font-size: 10px; font-weight: 500; color: var(--_dim); }
+.vs-chat-input-menu li.vs-active { background: color-mix(in srgb, var(--_ink) 7%, transparent); }
+.vs-chat-input-menu li[aria-selected="true"] {
+  background: color-mix(in srgb, var(--_accent) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--_accent);
+}
+
+/* ------------------------------------------------------------ send/stop */
+.vs-chat-input-send {
+  position: relative;
+  margin-left: auto;
+  width: 34px;
+  height: 32px;
+  flex: none;
+  border: 0;
+  border-radius: 10px;
+  background: var(--_accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform .16s ease, background .2s ease, opacity .2s ease;
+}
+.vs-chat-input-send:hover:not(:disabled) { background: color-mix(in srgb, var(--_accent) 82%, #000); transform: translateY(-1px); }
+.vs-chat-input-send:disabled { opacity: .4; cursor: not-allowed; }
+.vs-chat-input-send .vs-icon { grid-area: 1 / 1; transition: transform .22s cubic-bezier(.3, 1.3, .4, 1), opacity .16s ease; }
+.vs-chat-input-send .vs-icon-stop { transform: scale(.4) rotate(-90deg); opacity: 0; }
+.vs-chat-input-send[data-busy="true"] .vs-icon-send { transform: scale(.4) rotate(90deg); opacity: 0; }
+.vs-chat-input-send[data-busy="true"] .vs-icon-stop { transform: none; opacity: 1; }
+.vs-chat-input-send[data-busy="true"] { background: color-mix(in srgb, var(--_accent) 30%, var(--_bg)); color: var(--_accent); }
+.vs-chat-input-send[data-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid transparent;
+  border-top-color: var(--_accent);
+  animation: vs-spin .9s linear infinite;
+  pointer-events: none;
+}
+@keyframes vs-spin { to { transform: rotate(360deg); } }
+
+.vs-chat-input input[type="file"] { display: none; }
+
+/* ------------------------------------------------------------ motion */
+@media (prefers-reduced-motion: reduce) {
+  .vs-chat-input, .vs-chat-input * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  .vs-chat-input-send[data-busy="true"]::after { animation: vs-spin 2.6s linear infinite !important; }
+}

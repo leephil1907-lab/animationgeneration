@@ -294,3 +294,63 @@ Modified: `app/layout.tsx`, `app/dashboard/page.tsx`, `app/storyboard/page.tsx`,
 `lib/storyboard.ts`, `components/AuthShell.tsx`, `app/studio/page.tsx`,
 `comfyui/WORKFLOW-TEMPLATES.md`, `app/globals.css`, `scripts/ui-test.mjs`,
 `scripts/e2e-test.sh`, `README.md`.
+
+---
+
+## Phase 6 — vs-chat-input composer in the studio chat
+
+The seventh request pasted the vs-chat-input component spec (markup contract,
+JS API, events, CSS variables, key bindings) and asked for it integrated into
+MOTIONA Studio rather than shipped standalone.
+
+### What landed
+
+- `components/vs-chat-input/vs-chat-input.js` — vanilla controller implementing
+  the whole spec: spring textarea growth, chips + upload rings, keyboard
+  listbox model picker, send→stop morph, Esc-stop, Backspace-removes-file,
+  paste/drag-drop intake, cancelable submit contract, reduced-motion behaviour.
+- `components/vs-chat-input/vs-chat-input.css` — themed purely through the
+  documented CSS variables; light + dark variants.
+- `components/vs-chat-input/vs-chat-input.d.ts` — typings for the API surface.
+- `components/ChatComposer.tsx` — React wrapper: renders the spec markup,
+  mounts once, re-broadcasts events as props, ref-exposes the controller.
+- `components/ChatPanel.tsx` — old mic/textarea/send bar replaced by the
+  composer; mic lives in the bar as an extra control; uploads report real
+  FileReader progress into the rings; the stop button aborts the chat fetch;
+  attachments are listed on the sent message; the chosen model rides along in
+  the `/api/chat` body.
+
+### Bugs the test suite caught
+
+- The submit handler called `preventDefault()` on the native event and then
+  checked `event.defaultPrevented` for the auto-clear contract — so the box
+  never cleared and never turned busy. The contract belongs to the custom
+  `vs-chat-input:submit` event; `fire()` now returns the dispatched event.
+- `.tsx` parses `<T>` arrow generics as JSX — the event-helper became a
+  `<T,>` arrow; `useImperativeHandle` needed a delegating proxy because the
+  controller only exists after mount.
+
+### Test-harness lessons (small-host edition)
+
+This sandbox runs 2 vCPU / 2 GB RAM. Under suite load `next dev` stalled for
+minutes (logged: `Compiled /api/storyboards in 205.4s`, a job poll at 525 s),
+which looked like navigation hangs but was swap thrashing. Both suites now run
+against the **production build** (`npm run build` + `npm run start`), Chromium
+launches with memory-trim flags, navigations use `domcontentloaded` plus
+explicit hydration waits instead of `networkidle2` (which a polling page can
+starve), and the external Fontshare stylesheet was dropped — the composer's
+`--vs-chat-input-font` falls back to the system stack.
+
+- `scripts/e2e-test.sh`: 40/40 against prod.
+- `scripts/ui-test.mjs`: 74/74 against prod, new section 12 covering composer
+  render, keyboard model picker, Enter-sends + auto-clear, busy morph, Esc-stop,
+  chip + ring completion, Backspace removal, disabled send
+  (`docs/screenshots/08-composer.png`).
+
+### Files touched in Phase 6
+
+New: `components/vs-chat-input/vs-chat-input.{js,css,d.ts}`,
+`components/ChatComposer.tsx`.
+
+Modified: `components/ChatPanel.tsx`, `app/globals.css`, `scripts/ui-test.mjs`,
+`README.md`, `BUILD-NOTES.md`.

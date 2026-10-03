@@ -117,6 +117,7 @@ STORAGE_PUBLIC_BASE_URL=
 - **Account layer + dashboard** — `/signup` creates a device-local account and lands on `/dashboard`; `/login` restores the session; `/dashboard` is guarded and links every workspace surface. See "Account layer" below.
 - **Age gate** — a full-app interstitial before any route renders. Confirming 18+ enters; declining navigates the browser away (`about:blank`) so the homepage never loads.
 - **MOTIONA Studio identity** — the studio formerly labelled "Animation Generation Studio" now ships as MOTIONA Studio: an inline SVG brand mark in every header, a wordmark logo on the landing page, a web-app manifest, and installable icons (SVG plus 192/512 PNG and apple-touch).
+- **vs-chat-input composer** — the studio chat box is the `vs-chat-input` component: a spring-growing textarea, file chips with upload rings (paperclip, drag-and-drop or paste), a keyboard-complete model picker, and a send button that morphs into stop while a reply generates. Vanilla core in `components/vs-chat-input/`, React wrapper in `components/ChatComposer.tsx`.
 
 ### Account layer
 
@@ -160,6 +161,28 @@ implementation, and the `s3` provider is declared but deliberately throws rather
 than silently pretending to work. Adding object storage means implementing
 `readRecord` / `writeRecord` / `listRecords` for that provider — the job and
 storyboard contracts do not change.
+
+### vs-chat-input composer
+
+`components/vs-chat-input/vs-chat-input.js` is a framework-free controller mounted
+on a `form.vs-chat-input` (`vsChatInput.mount(el)` → also exposed as
+`el.vsChatInput`). It owns the spring box growth (capped by
+`--vs-chat-input-lines`, then scroll), the file chips and their progress rings
+(`setProgress(id, 0..1)`; send stays disabled until every file reaches 1), the
+listbox model menu (arrows, Home/End, type-ahead, Enter/Space, Esc), the send→stop
+morph (`setBusy`), and the key contract: Enter sends, Shift+Enter newlines,
+coarse pointers get Enter-as-newline, Backspace in an empty box removes the last
+file, Esc stops while busy. Everything is announced through bubbling
+`vs-chat-input:*` events; `vs-chat-input:submit` is cancelable — preventing it
+means the host takes over the send and the box keeps its text, otherwise the box
+clears and turns busy until `setBusy(false)`. Theming is entirely CSS variables
+(`--vs-chat-input-accent|-bg|-ink|-dim|-radius|-width|-chip|-lines|-font`), and
+reduced-motion preferences snap the springs and slow the busy ring.
+
+`components/ChatComposer.tsx` renders the documented markup, mounts the
+controller once, re-broadcasts the events as props, and exposes the API through a
+ref. `ChatPanel` drives uploads with real `FileReader` progress and aborts the
+chat fetch when the composer fires `vs-chat-input:stop`.
 
 ### Video workflow boundary
 
