@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { byUpdatedDesc, listRecords, readRecord, storageLabel, writeRecord } from '@/lib/storage';
 import type { MotionaJob } from '@/lib/jobs';
+import { requireSameOrigin, validateContentLength } from '@/lib/api-security';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,8 @@ function sanitize(input: any): MotionaJob | null {
 
 /** GET /api/jobs — every persisted job, newest first. */
 export async function GET(request: Request) {
+  const denied = requireSameOrigin(request);
+  if (denied) return denied;
   try {
     const { searchParams } = new URL(request.url);
     const storyboardId = searchParams.get('storyboardId');
@@ -80,6 +83,8 @@ export async function GET(request: Request) {
 
 /** POST /api/jobs — create or update one job record. */
 export async function POST(request: Request) {
+  const denied = requireSameOrigin(request) || validateContentLength(request, 256 * 1024);
+  if (denied) return denied;
   try {
     const body = await request.json();
     const job = sanitize(body?.job ?? body);
@@ -107,6 +112,8 @@ export async function POST(request: Request) {
 
 /** DELETE /api/jobs?id=... — remove one job, or the whole store with no id. */
 export async function DELETE(request: Request) {
+  const denied = requireSameOrigin(request);
+  if (denied) return denied;
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
