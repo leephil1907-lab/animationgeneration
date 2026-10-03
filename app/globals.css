@@ -606,3 +606,29 @@ a:hover,button:hover{filter:brightness(1.08)}
 }
 .motionaLoadingMark{border-color:var(--motiona-pink);color:var(--motiona-pink-soft);box-shadow:0 0 50px rgba(255,79,163,.18)}
 .motionaLoadingLine i{background:linear-gradient(90deg,var(--motiona-pink),var(--motiona-violet),var(--motiona-cyan))}
+
+/* Continuous MOTIONA homepage environment */
+.conversationApp{position:relative;isolation:isolate;background:#08070b!important;color:#f7f4f7!important;min-height:100vh;overflow:hidden}
+.conversationApp:before{display:none!important}
+.motionaAtmosphere{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:-1;background:radial-gradient(circle at 20% 8%,rgba(255,79,163,.14),transparent 30%),radial-gradient(circle at 82% 35%,rgba(155,124,255,.11),transparent 32%),radial-gradient(circle at 45% 90%,rgba(99,230,255,.07),transparent 30%)}
+.motionaAtmosphere span{position:absolute;width:34vw;height:34vw;border-radius:50%;filter:blur(80px);opacity:.13;animation:motionaFloat 14s ease-in-out infinite}
+.motionaAtmosphere span:nth-child(1){background:#ff4fa3;left:-14vw;top:8vh}.motionaAtmosphere span:nth-child(2){background:#9b7cff;right:-12vw;top:30vh;animation-delay:-4s}.motionaAtmosphere span:nth-child(3){background:#63e6ff;left:38vw;bottom:-25vw;animation-delay:-8s}
+.conversationSidebar,.conversationMain,.conversationInspector{background:rgba(8,7,11,.58)!important;backdrop-filter:blur(22px)}
+.conversationTop{background:rgba(8,7,11,.72)!important;border-color:#261c29!important}
+.conversationBody{background:linear-gradient(180deg,rgba(8,7,11,.12),rgba(8,7,11,.72))}
+.conversationWelcome{min-height:calc(100vh - 220px);display:flex;flex-direction:column;justify-content:center}
+.welcomeOrb{box-shadow:0 0 80px color-mix(in srgb,var(--accent) 22%,transparent);border-color:color-mix(in srgb,var(--accent) 60%,#fff 0%)}
+.starterGrid button:hover,.conversationSideLinks a:hover,.quickCreate a:hover{border-color:#ff4fa3!important;color:#ffd1e8!important;transform:translateY(-2px)}
+.conversationComposerWrap{background:linear-gradient(180deg,transparent,rgba(8,7,11,.92) 22%);padding-top:34px}
+.conversationComposer{border-color:#352538!important;background:rgba(18,12,20,.88)!important;box-shadow:0 18px 70px rgba(255,47,143,.08)}
+.conversationComposer .send{background:linear-gradient(135deg,#ff4fa3,#9b7cff)!important;color:#09070b!important}
+.conversationComposer .mic.recording{color:#ff4fa3!important;border-color:#ff4fa3!important}
+.bubbleRow:not(.user) .bubble{background:rgba(21,15,24,.8)!important;border-color:#2c2030!important}
+.user .bubble{background:linear-gradient(135deg,rgba(255,79,163,.18),rgba(155,124,255,.16))!important;border-color:rgba(255,79,163,.28)!important}
+.conversationFooterPanel{background:rgba(8,7,11,.92)!important;border-color:#261c29!important}
+.motionaFlow{position:relative;z-index:2;display:grid;grid-template-columns:1fr 70px 1fr 70px 1fr 70px 1fr;align-items:center;max-width:1100px;margin:0 auto;padding:70px 28px 100px;border-top:1px solid rgba(255,255,255,.06)}
+.motionaFlow>div{display:grid;gap:7px}.motionaFlow span{font:700 9px/1 Inter,sans-serif;color:#ff4fa3;letter-spacing:.2em}.motionaFlow b{font-size:11px;letter-spacing:.18em}.motionaFlow small{color:#68656c;font-size:9px;line-height:1.5;max-width:150px}.motionaFlow i{height:1px;background:linear-gradient(90deg,rgba(255,79,163,.55),rgba(155,124,255,.2));position:relative}.motionaFlow i:after{content:'›';position:absolute;right:-2px;top:-8px;color:#ff4fa3;font-size:14px}
+@keyframes motionaFloat{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(4vw,-2vh,0) scale(1.08)}}
+@media(max-width:900px){.motionaFlow{grid-template-columns:1fr 35px 1fr;gap:28px 12px}.motionaFlow i:nth-of-type(2){display:none}.motionaFlow i:nth-of-type(3){display:none}.motionaFlow>div:nth-of-type(3),.motionaFlow>div:nth-of-type(4){display:none}}
+@media(max-width:720px){.conversationWelcome{min-height:calc(100vh - 180px)}.motionaFlow{grid-template-columns:1fr 1fr;padding:45px 18px 70px}.motionaFlow i{display:none!important}.motionaFlow>div{padding:14px 0}}
+@media(prefers-reduced-motion:reduce){.motionaAtmosphere span{animation:none}}
