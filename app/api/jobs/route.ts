@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { requireSameOrigin } from '@/lib/api-security';
+import { requireServerUser } from '@/lib/server-auth';
 import { byUpdatedDesc, listRecords, readRecord, storageLabel, writeRecord } from '@/lib/storage';
 import type { MotionaJob } from '@/lib/jobs';
 import { requireSameOrigin, validateContentLength } from '@/lib/api-security';
@@ -62,17 +64,19 @@ export async function GET(request: Request) {
   const denied = requireSameOrigin(request);
   if (denied) return denied;
   try {
+    const user = await requireServerUser();
     const { searchParams } = new URL(request.url);
     const storyboardId = searchParams.get('storyboardId');
     const id = searchParams.get('id');
 
     if (id) {
       const record = await readRecord<MotionaJob>(COLLECTION, id);
-      if (!record) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      if (!record || record.owner !== user.id) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
       return NextResponse.json({ job: record, storage: storageLabel() });
     }
 
     let jobs = byUpdatedDesc(await listRecords<MotionaJob>(COLLECTION, MAX_PERSISTED));
+    jobs = jobs.filter((job) => job.owner === user.id);
     if (storyboardId) jobs = jobs.filter((job) => job.storyboardId === storyboardId);
 
     return NextResponse.json({ jobs, storage: storageLabel(), count: jobs.length });
@@ -86,9 +90,11 @@ export async function POST(request: Request) {
   const denied = requireSameOrigin(request) || validateContentLength(request, 256 * 1024);
   if (denied) return denied;
   try {
+    const user = await requireServerUser();
     const body = await request.json();
     const job = sanitize(body?.job ?? body);
     if (!job) return NextResponse.json({ error: 'A job with an id is required' }, { status: 400 });
+    job.owner = user.id;
 
     // Merge rather than clobber: a poller posting a status update must not erase
     // outputs that an earlier reconciliation already recorded.
@@ -115,11 +121,14 @@ export async function DELETE(request: Request) {
   const denied = requireSameOrigin(request);
   if (denied) return denied;
   try {
+    const user = await requireServerUser();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Pass ?id= to delete a specific job' }, { status: 400 });
 
     const { deleteRecord } = await import('@/lib/storage');
+    const existing = await readRecord<MotionaJob>(COLLECTION, id);
+    if (!existing || existing.owner !== user.id) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     const removed = await deleteRecord(COLLECTION, id);
     return NextResponse.json({ ok: true, removed });
   } catch (error) {
