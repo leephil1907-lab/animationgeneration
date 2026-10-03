@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, LogIn } from 'lucide-react';
 import AuthShell from '@/components/AuthShell';
-import { login } from '@/lib/auth';
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,14 +21,14 @@ export default function LoginPage() {
     setBusy(true);
     setError('');
     setStatus('');
-    const result = await login({ email, password });
-    setBusy(false);
-    if (result.ok) {
-      setStatus(`Signed in as ${result.session.email} — opening your dashboard…`);
+    try {
+      const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const result = await response.json();
+      setBusy(false);
+      if (!response.ok) { setError(result.error || 'Sign in failed.'); return; }
+      setStatus('Signed in — opening your dashboard…');
       router.push('/dashboard');
-      return;
-    }
-    setError(result.error);
+    } catch { setBusy(false); setError('Could not reach the authentication service.'); }
   }
 
   return (
@@ -73,10 +73,7 @@ export default function LoginPage() {
         </button>
         {error && <p className="authStatus error">{error}</p>}
         {status && <p className="authStatus">{status}</p>}
-        <p className="authDemoNote">
-          Accounts are stored only in this browser — a local demo account layer, not a production
-          authentication provider.
-        </p>
+        <p className="authDemoNote">Secure server-side authentication. Your session is stored in protected cookies.</p>
       </form>
       <div className="authSwitch">
         New here? <Link href="/signup">Create an account</Link>
