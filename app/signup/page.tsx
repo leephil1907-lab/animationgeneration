@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
 import AuthShell from '@/components/AuthShell';
-import { signup } from '@/lib/auth';
+
 
 export default function SignupPage() {
   const router = useRouter();
@@ -22,14 +22,14 @@ export default function SignupPage() {
     setBusy(true);
     setError('');
     setStatus('');
-    const result = await signup({ name, email, password });
-    setBusy(false);
-    if (result.ok) {
-      setStatus(`Account created for ${result.session.email} — opening your dashboard…`);
-      router.push('/dashboard');
-      return;
-    }
-    setError(result.error);
+    try {
+      const response = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
+      const result = await response.json();
+      setBusy(false);
+      if (!response.ok) { setError(result.error || 'Account creation failed.'); return; }
+      if (result.confirmed) { setStatus('Account created — opening your dashboard…'); router.push('/dashboard'); }
+      else setStatus('Account created. Check your email to confirm it, then sign in.');
+    } catch { setBusy(false); setError('Could not reach the authentication service.'); }
   }
 
   return (
@@ -82,10 +82,7 @@ export default function SignupPage() {
         </button>
         {error && <p className="authStatus error">{error}</p>}
         {status && <p className="authStatus">{status}</p>}
-        <p className="authDemoNote">
-          Your account lives only in this browser — a local demo account layer, not a production
-          authentication provider. Nothing is uploaded.
-        </p>
+        <p className="authDemoNote">Your account is protected by server-side authentication. Email confirmation may be required.</p>
       </form>
       <div className="authSwitch">
         Already have an account? <Link href="/login">Sign in</Link>
