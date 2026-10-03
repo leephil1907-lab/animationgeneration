@@ -456,3 +456,10 @@ font-weight:900;letter-spacing:.12em;font-size:12px;white-space:nowrap}
 @keyframes scan{from{transform:translateY(-30%)}to{transform:translateY(130%)}}
 @media(max-width:1050px){.motionaReel{grid-template-columns:repeat(2,1fr)}.showcaseIntro{grid-template-columns:1fr;gap:25px}.sampleStage{height:430px}}
 @media(max-width:650px){.motionaShowcase{padding:20px 18px 90px}.motionaReel{grid-template-columns:1fr}.sampleStage{height:420px}.showcaseIntro h2{font-size:43px}.showcaseRail{gap:10px}}
+
+
+/* ComfyUI endpoint status */
+.comfyEndpoint{display:flex;align-items:center;gap:12px;margin:14px 0;padding:12px 14px;border:1px solid rgba(139,92,246,.2);border-radius:14px;background:rgba(255,255,255,.025)}
+.comfyEndpointIcon{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:rgba(139,92,246,.12);color:#a78bfa;flex:none}
+.comfyEndpointCopy{display:grid;gap:2px;min-width:0;flex:1}.comfyEndpointCopy strong{font-size:13px}.comfyEndpointCopy span,.comfyEndpointCopy small{color:rgba(255,255,255,.55);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.comfyEndpointCopy small{color:#a78bfa}.comfyEndpoint .textBtn{margin-left:auto;white-space:nowrap}
+@media(max-width:640px){.comfyEndpoint{align-items:flex-start}.comfyEndpointCopy span{white-space:normal}.comfyEndpoint .textBtn{align-self:center}}
