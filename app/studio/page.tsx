@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ImagePlus, Sparkles, Wand2, Upload, UserRound, Film, SlidersHorizontal, Cpu, RefreshCw, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 import AccountChip from '@/components/AccountChip';
+import SceneShotWorkspace from '@/components/SceneShotWorkspace';
 import ChatPanel from '@/components/ChatPanel';
 import { buildCharacterProfile, type CharacterProfile } from '@/lib/character-profile';
 
@@ -17,9 +18,9 @@ const emptyForm={name:'',role:'',age:'Adult',style:'Cinematic',traits:'',notes:'
 const voicePresets=[['warm-female','Warm female'],['deep-male','Deep male'],['soft-breathy','Soft / breathy'],['energetic','Energetic'],['calm-narrator','Calm narrator']] as const;
 export default function Home() {
   const searchParams=useSearchParams();
-  const initialView=(searchParams.get('view') as 'create'|'gallery'|'generate'|'outputs'|'chat')||'create';
+  const initialView=(searchParams.get('view') as 'create'|'gallery'|'generate'|'outputs'|'chat'|'scene')||'create';
   const [characters,setCharacters]=useState<Character[]>([]);
-  const [active,setActive]=useState<'create'|'gallery'|'generate'|'outputs'|'chat'>(initialView);
+  const [active,setActive]=useState<'create'|'gallery'|'generate'|'outputs'|'chat'|'scene'>(initialView);
   const [image,setImage]=useState<string|null>(null);
   const [referenceFile,setReferenceFile]=useState<File|null>(null);
   const [faceConsent,setFaceConsent]=useState(false);
@@ -168,13 +169,15 @@ export default function Home() {
       <nav>
         <button className={active==='create'?'nav active':'nav'} onClick={()=>setActive('create')}>Character Lab</button>
         <button className={active==='gallery'?'nav active':'nav'} onClick={()=>setActive('gallery')}>Characters <span>{countLabel}</span></button>
-        <button className={active==='generate'?'nav active':'nav'} onClick={()=>setActive('generate')}>Generate</button>
+        <button className={active==='scene'?'nav active':'nav'} onClick={()=>setActive('scene')}>Scene / Shot</button><button className={active==='generate'?'nav active':'nav'} onClick={()=>setActive('generate')}>Generate</button>
         <button className={active==='outputs'?'nav active':'nav'} onClick={()=>setActive('outputs')}>Outputs</button>
         <button className={active==='chat'?'nav active':'nav'} onClick={()=>setActive('chat')}>Agent Chat</button><a className="nav navLink" href="/storyboard">Storyboard</a><a className="nav navLink" href="/animate">Animate</a><a className="nav navLink" href="/gallery">Gallery</a>
       </nav>
       <div className="accountLinks"><AccountChip /></div>
       <div className="status"><i className={comfy==='connected'?'online':''}/>{comfy==='connected'?'ComfyUI connected':comfy==='offline'?'ComfyUI offline':'Checking ComfyUI…'}</div>
     </header>
+
+    {active==='scene'&&<SceneShotWorkspace characters={characters.map(c=>({id:c.id,name:c.name,role:c.role,style:c.style,traits:c.traits}))} selectedCharacterId={selectedId}/>} 
 
     {active==='create'&&<section className="workspace">
       <div className="hero"><div><p className="eyebrow"><Sparkles size={14}/> CHARACTER LAB / FRAME 01</p><h1>Build a character<br/><em>you can animate.</em></h1><p className="sub">Start from a blank character or upload a reference image. Define identity, visual language and performance details before sending the character into ComfyUI.</p></div><div className="heroBadge"><Wand2 size={18}/><span>REAL-TIME CREATIVE PIPELINE</span></div></div>
