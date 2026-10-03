@@ -81,7 +81,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ storyboard: board, storage: storageLabel() });
     }
 
-    const boards = byUpdatedDesc(await listRecords<Storyboard>(COLLECTION, 100));
+    const boards = byUpdatedDesc(await listRecords<Storyboard>(COLLECTION, 100)).filter((board) => board.owner === user.id);
     return NextResponse.json({ storyboards: boards, storage: storageLabel(), count: boards.length });
   } catch (error) {
     return NextResponse.json({ error: 'Could not read storyboards', details: String(error) }, { status: 500 });
