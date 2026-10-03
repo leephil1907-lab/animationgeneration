@@ -118,8 +118,8 @@ export default function Home() {
   async function generate(){
     if(image&&!faceConsent){setStatus('Please confirm the face-reference safety checkbox.');return}
     if(!prompt.trim()){setStatus('Add a generation prompt first.');return}
-    setStatus('Checking prompt safety…');
-    try{const mr=await fetch('/api/moderate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});const md=await mr.json();if(!md.allowed){setStatus(md.reason||'Prompt blocked by safety filter.');return}}catch{setStatus('Safety filter unavailable. Generation stopped.');return}
+    setStatus('Checking age and consent requirements…');
+    try{const mr=await fetch('/api/moderate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});const md=await mr.json();if(!md.allowed){setStatus(md.reason||'Prompt blocked by the studio safety policy.');return}}catch{setStatus('Generation checks are unavailable. Generation stopped.');return}
     if(mode==='animation' && !template){setStatus('Import a ComfyUI API workflow template for animation first.');return}
     const character=characters.find(c=>c.id===selectedId) || (form.name.trim()?{id:'draft',...form,image,created:new Date().toISOString()}:null);
     if(!character){setStatus('Create or select a character first.');return}
