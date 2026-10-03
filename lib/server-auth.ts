@@ -79,6 +79,22 @@ async function refreshIfNeeded(): Promise<string | null> {
   return data.access_token;
 }
 
+/** Returns the current authenticated access token for server-side Supabase Data API calls. */
+export async function getServerAccessToken(): Promise<string | null> {
+  const c = config();
+  if (!c) return null;
+  const jar = await cookies();
+  let access = jar.get(ACCESS)?.value;
+  if (!access) return null;
+  let response = await authFetch('/user', { headers: { Authorization: `Bearer ${access}` } });
+  if (response.status === 401) {
+    access = await refreshIfNeeded();
+    if (!access) return null;
+    response = await authFetch('/user', { headers: { Authorization: `Bearer ${access}` } });
+  }
+  return response.ok ? access : null;
+}
+
 export async function getServerUser(): Promise<AuthUser | null> {
   const c = config();
   if (!c) return null;
