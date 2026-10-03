@@ -1,13 +1,18 @@
 import { cookies } from 'next/headers';
 
 const ACCESS = 'motiona-access';
+
+// MOTIONA's Supabase URL and publishable key are intentionally public credentials.
+// They are safe to ship to the browser; database access is protected by RLS.
+const BUILTIN_SUPABASE_URL = 'https://zufobgccfjeguwrjjmcf.supabase.co';
+const BUILTIN_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Yaa0PCMcFVagqqQtw15M0w_CblbFS_S';
 const REFRESH = 'motiona-refresh';
 
 type AuthUser = { id: string; email?: string; user_metadata?: Record<string, unknown> };
 
 function config() {
-  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '');
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
+  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || BUILTIN_SUPABASE_URL).replace(/\/$/, '');
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || BUILTIN_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return null;
   return { url, key };
 }
