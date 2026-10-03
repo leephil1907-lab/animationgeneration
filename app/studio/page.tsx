@@ -1,5 +1,7 @@
 'use client';
 
+import './studio-cinematic.css';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ImagePlus, Sparkles, Wand2, Upload, UserRound, Film, SlidersHorizontal, Cpu, RefreshCw, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
@@ -162,20 +164,20 @@ export default function Home() {
 
   return <main>
     <header className="topbar">
-      <div className="brand"><span className="brandMark">AG</span><div><strong>ANIMATION</strong><small>GENERATION STUDIO</small></div></div>
+      <div className="brand"><span className="brandMark">M</span><div><strong>MOTIONA</strong><small>CREATIVE WORKSPACE</small></div></div>
       <nav>
-        <button className={active==='create'?'nav active':'nav'} onClick={()=>setActive('create')}>Create</button>
+        <button className={active==='create'?'nav active':'nav'} onClick={()=>setActive('create')}>Character Lab</button>
         <button className={active==='gallery'?'nav active':'nav'} onClick={()=>setActive('gallery')}>Characters <span>{countLabel}</span></button>
         <button className={active==='generate'?'nav active':'nav'} onClick={()=>setActive('generate')}>Generate</button>
         <button className={active==='outputs'?'nav active':'nav'} onClick={()=>setActive('outputs')}>Outputs</button>
-        <button className={active==='chat'?'nav active':'nav'} onClick={()=>setActive('chat')}>Chat</button><a className="nav navLink" href="/storyboard">Storyboard</a><a className="nav navLink" href="/animate">Animate</a><a className="nav navLink" href="/gallery">Gallery</a>
+        <button className={active==='chat'?'nav active':'nav'} onClick={()=>setActive('chat')}>Agent Chat</button><a className="nav navLink" href="/storyboard">Storyboard</a><a className="nav navLink" href="/animate">Animate</a><a className="nav navLink" href="/gallery">Gallery</a>
       </nav>
       <div className="accountLinks"><AccountChip /></div>
       <div className="status"><i className={comfy==='connected'?'online':''}/>{comfy==='connected'?'ComfyUI connected':comfy==='offline'?'ComfyUI offline':'Checking ComfyUI…'}</div>
     </header>
 
     {active==='create'&&<section className="workspace">
-      <div className="hero"><div><p className="eyebrow"><Sparkles size={14}/> CHARACTER LAB</p><h1>Build a character<br/><em>you can animate.</em></h1><p className="sub">Start from a blank character or upload a reference image. Define identity, visual language and performance details before sending the character into ComfyUI.</p></div><div className="heroBadge"><Wand2 size={18}/><span>Real ComfyUI workflow bridge</span></div></div>
+      <div className="hero"><div><p className="eyebrow"><Sparkles size={14}/> CHARACTER LAB / FRAME 01</p><h1>Build a character<br/><em>you can animate.</em></h1><p className="sub">Start from a blank character or upload a reference image. Define identity, visual language and performance details before sending the character into ComfyUI.</p></div><div className="heroBadge"><Wand2 size={18}/><span>REAL-TIME CREATIVE PIPELINE</span></div></div>
       <div className="grid">
         <section className="panel reference"><div className="panelHead"><div><b>01 / REFERENCE</b><h2>Character image</h2></div><ImagePlus size={20}/></div>
           <label className="drop" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();onUpload(e.dataTransfer.files?.[0])}}>
@@ -208,7 +210,7 @@ export default function Home() {
       <div className="cards">{characters.map(c=><article className="card" key={c.id}>{c.image?<img src={c.image} alt={c.name}/>:<div className="cardPlaceholder"><UserRound/></div>}<div><h3>{c.name}</h3><p>{c.role||'Character'} · {c.style}</p><span>{c.traits||'No appearance notes yet.'}</span><button className="secondary cardAction" onClick={()=>useCharacter(c)}>Use for generation</button></div></article>)}</div>}
     </section>}
 
-    {active==='generate'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><Cpu size={14}/> GENERATION PIPELINE</p><h1>Generate.</h1><p className="sub">Select a saved character, add a scene, and the studio will upload the optional reference image, queue a character-aware ComfyUI image workflow, then poll for the finished output.</p></div><button className="secondary" onClick={checkComfy}><RefreshCw size={15}/> Refresh</button></div>
+    {active==='generate'&&<section className="gallery"><div className="galleryHead"><div><p className="eyebrow"><Cpu size={14}/> GENERATION PIPELINE / SCENE 01</p><h1>Generate.</h1><p className="sub">Select a saved character, add a scene, and the studio will upload the optional reference image, queue a character-aware ComfyUI image workflow, then poll for the finished output.</p></div><button className="secondary" onClick={checkComfy}><RefreshCw size={15}/> Refresh</button></div>
       <div className="generatePanel panel">
         <div className="pipelineRow"><span>REFERENCE</span><span>CHARACTER PROFILE</span><span>COMFYUI</span><span>OUTPUT</span></div>
         <label>Character<select value={selectedId} onChange={e=>{setSelectedId(e.target.value);const c=characters.find(x=>x.id===e.target.value);if(c){setForm({name:c.name,role:c.role,age:c.age,style:c.style,traits:c.traits,notes:c.notes,voice:c.voice||'warm-female'});setImage(c.image);setFaceConsent(Boolean(c.faceConsent));setVoiceSample(null)}}}><option value="">Choose a saved character…</option>{characters.map(c=><option key={c.id} value={c.id}>{c.name} — {c.role||'Character'}</option>)}</select></label>
@@ -240,6 +242,6 @@ export default function Home() {
       {job.error&&<div className="errorBox">{job.error}</div>}
       {job.outputs.length>0?<div className="outputGrid">{job.outputs.map((o,i)=><article className="outputCard" key={`${o.filename}-${i}`}>{/\.(mp4|webm|mov|gif)$/i.test(o.filename)?<video src={o.url} controls playsInline/>:<img src={o.url} alt={o.filename}/>}<div><span>{o.filename}</span><a href={o.url} target="_blank" rel="noreferrer">Open output</a></div></article>)}</div>:job.status!=='error'&&<div className="empty small"><Loader2 className="spin"/><p>Waiting for ComfyUI to finish and expose the output file…</p></div>}</div>}
     </section>}
-    <footer><span>MOTIONA Studio</span><span>Characters · References · ComfyUI · Outputs · Agent Chat</span><span>v0.7</span></footer>
+    <footer><span>MOTIONA Studio</span><span>Characters · References · ComfyUI · Outputs · Agent Chat</span><span>v0.8 / CINEMATIC WORKSPACE</span></footer>
   </main>
 }
