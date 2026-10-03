@@ -1,55 +1,36 @@
 /**
- * Persistent storage adapter (server-side).
+ * Persistent server-side record storage.
  *
- * `.env.example` has always declared STORAGE_PROVIDER / STORAGE_BUCKET /
- * STORAGE_PUBLIC_BASE_URL but nothing read them, so the gallery fell back to
- * browser storage and lost every job on tab close.
- *
- * This implements the adapter boundary that README promised: a local file store
- * today, object storage later, with the same interface. Job and storyboard
- * contracts do not change when a new provider is added — only `writeFile`,
- * `readFile` and `listDir` do.
- *
- * Honesty note kept from the original README: this is a local disk store on the
- * machine running MOTIONA. It is not cloud storage and is not multi-tenant safe.
+ * Production uses the Supabase Data API with the authenticated user's bearer
+ * token, so RLS enforces ownership in the database. Local development can keep
+ * using the filesystem when Supabase is not configured.
  */
 
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { getServerAccessToken, getServerUser } from '@/lib/server-auth';
 
-export type StorageProvider = 'local-session' | 'local-file' | 's3';
+export type StorageProvider = 'supabase' | 'local-file';
 
-const PROVIDER = (process.env.STORAGE_PROVIDER || 'local-file') as StorageProvider;
-
-/** Where the local-file adapter keeps its JSON. Overridable for tests/deploys. */
+const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
 const DATA_DIR = process.env.STORAGE_DIR || path.join(process.cwd(), '.motiona-data');
 
-/** Public base URL for a future object-storage provider; unused by local-file. */
-export const PUBLIC_BASE_URL = process.env.STORAGE_PUBLIC_BASE_URL || '';
-export const BUCKET = process.env.STORAGE_BUCKET || '';
-
-export function storageProvider(): StorageProvider {
-  if (PROVIDER === 's3') {
-    // Refuse to silently pretend object storage works when it is not implemented.
-    if (!BUCKET) return 'local-file';
-    return 's3';
-  }
-  return PROVIDER === 'local-session' ? 'local-file' : PROVIDER;
+function hasSupabaseConfig(): boolean {
+  return Boolean(SUPABASE_URL && SUPABASE_KEY);
 }
 
-/** Human-readable label for the UI, so the app never overstates persistence. */
+export function storageProvider(): StorageProvider {
+  if (process.env.STORAGE_PROVIDER === 'local-file') return 'local-file';
+  if (process.env.NODE_ENV === 'production' && hasSupabaseConfig()) return 'supabase';
+  return 'local-file';
+}
+
 export function storageLabel(): string {
-  switch (storageProvider()) {
-    case 's3':
-      return `Object storage (${BUCKET})`;
-    case 'local-file':
-    default:
-      return 'Local disk store';
-  }
+  return storageProvider() === 'supabase' ? 'Supabase' : 'Local disk store';
 }
 
 function safeKey(key: string): string {
-  // Prevent traversal: keys become path segments.
   const cleaned = key.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '');
   if (!cleaned || cleaned === '.' || cleaned === '..') throw new Error('Invalid storage key');
   return cleaned;
@@ -63,8 +44,90 @@ async function ensureDir(dir: string): Promise<void> {
   await mkdir(dir, { recursive: true });
 }
 
+function restUrl(collection: string, key?: string): string {
+  const params = [
+    `collection=eq.${encodeURIComponent(safeKey(collection))}`,
+    ...(key ? [`record_key=eq.${encodeURIComponent(safeKey(key))}`] : []),
+  ];
+  return `${SUPABASE_URL}/rest/v1/motiona_records?${params.join('&')}`;
+}
+
+async function supabaseFetch(pathOrUrl: string, init: RequestInit = {}): Promise<Response> {
+  const token = await getServerAccessToken();
+  if (!token) throw new Error('UNAUTHENTICATED');
+
+  const url = pathOrUrl.startsWith('http') ? pathOrUrl : `${SUPABASE_URL}${pathOrUrl}`;
+  return fetch(url, {
+    ...init,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...(init.headers || {}),
+    },
+    cache: 'no-store',
+  });
+}
+
+async function supabaseRead<T>(collection: string, key: string): Promise<T | null> {
+  const response = await supabaseFetch(
+    `${restUrl(collection, key)}&select=payload&limit=1`,
+    { method: 'GET' },
+  );
+  if (!response.ok) throw new Error(`Supabase read failed: ${response.status}`);
+  const rows = await response.json() as Array<{ payload: T }>;
+  return rows[0]?.payload ?? null;
+}
+
+async function supabaseWrite<T>(collection: string, key: string, value: T): Promise<T> {
+  const user = await getServerUser();
+  if (!user) throw new Error('UNAUTHENTICATED');
+
+  const response = await supabaseFetch('/rest/v1/motiona_records', {
+    method: 'POST',
+    headers: {
+      Prefer: 'resolution=merge-duplicates,return=representation',
+    },
+    body: JSON.stringify({
+      collection: safeKey(collection),
+      record_key: safeKey(key),
+      owner_id: user.id,
+      payload: value,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text().catch(() => '');
+    throw new Error(`Supabase write failed: ${response.status} ${details.slice(0, 300)}`);
+  }
+
+  const rows = await response.json() as Array<{ payload: T }>;
+  return rows[0]?.payload ?? value;
+}
+
+async function supabaseDelete(collection: string, key: string): Promise<boolean> {
+  const response = await supabaseFetch(restUrl(collection, key), {
+    method: 'DELETE',
+    headers: { Prefer: 'return=minimal' },
+  });
+  if (!response.ok) throw new Error(`Supabase delete failed: ${response.status}`);
+  return response.status !== 404;
+}
+
+async function supabaseList<T>(collection: string, limit: number): Promise<T[]> {
+  const response = await supabaseFetch(
+    `${restUrl(collection)}&select=payload&order=updated_at.desc&limit=${Math.max(1, Math.min(limit, 500))}`,
+    { method: 'GET' },
+  );
+  if (!response.ok) throw new Error(`Supabase list failed: ${response.status}`);
+  const rows = await response.json() as Array<{ payload: T }>;
+  return rows.map((row) => row.payload);
+}
+
 export async function readRecord<T>(collection: string, key: string): Promise<T | null> {
-  if (storageProvider() === 's3') throw new Error('s3 adapter is not implemented yet');
+  if (storageProvider() === 'supabase') return supabaseRead<T>(collection, key);
+
   try {
     const raw = await readFile(resolvePath(collection, key), 'utf8');
     return JSON.parse(raw) as T;
@@ -75,7 +138,8 @@ export async function readRecord<T>(collection: string, key: string): Promise<T 
 }
 
 export async function writeRecord<T>(collection: string, key: string, value: T): Promise<T> {
-  if (storageProvider() === 's3') throw new Error('s3 adapter is not implemented yet');
+  if (storageProvider() === 'supabase') return supabaseWrite(collection, key, value);
+
   const file = resolvePath(collection, key);
   await ensureDir(path.dirname(file));
   await writeFile(file, JSON.stringify(value, null, 2), 'utf8');
@@ -83,7 +147,8 @@ export async function writeRecord<T>(collection: string, key: string, value: T):
 }
 
 export async function deleteRecord(collection: string, key: string): Promise<boolean> {
-  if (storageProvider() === 's3') throw new Error('s3 adapter is not implemented yet');
+  if (storageProvider() === 'supabase') return supabaseDelete(collection, key);
+
   const { unlink } = await import('node:fs/promises');
   try {
     await unlink(resolvePath(collection, key));
@@ -95,7 +160,8 @@ export async function deleteRecord(collection: string, key: string): Promise<boo
 }
 
 export async function listRecords<T>(collection: string, limit = 200): Promise<T[]> {
-  if (storageProvider() === 's3') throw new Error('s3 adapter is not implemented yet');
+  if (storageProvider() === 'supabase') return supabaseList<T>(collection, limit);
+
   const dir = path.join(DATA_DIR, safeKey(collection));
   await ensureDir(dir);
 
@@ -121,9 +187,6 @@ export async function listRecords<T>(collection: string, limit = 200): Promise<T
   return records;
 }
 
-/**
- * Newest-first ordering helper. Records are expected to carry `updatedAt`.
- */
 export function byUpdatedDesc<T extends { updatedAt?: string; createdAt?: string }>(records: T[]): T[] {
   return [...records].sort((a, b) => {
     const at = Date.parse(a.updatedAt || a.createdAt || '') || 0;
