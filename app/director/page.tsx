@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Clapperboard, Loader2, Sparkles, Wand2 } from 'lucide-react';
 
 type Shot={id:string;duration:number;scene:string;camera:string;action:string;dialogue:string;transition:string};
@@ -13,6 +14,7 @@ export default function DirectorPage(){
   const [plan,setPlan]=useState<Plan|null>(null);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
+  const router=useRouter();
 
   async function direct(){
     if(!prompt.trim()||busy)return;
@@ -23,6 +25,19 @@ export default function DirectorPage(){
       if(!r.ok)throw new Error(data.error||'Director failed');
       setPlan(data);
     }catch(e){setError(e instanceof Error?e.message:'Director failed');}
+    finally{setBusy(false);}
+  }
+
+  async function sendToStoryboard(){
+    if(!plan)return;
+    setBusy(true); setError('');
+    try{
+      const r=await fetch('/api/director/storyboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,characterName:character})});
+      const data=await r.json();
+      if(!r.ok)throw new Error(data.error||'Could not create storyboard');
+      localStorage.setItem('motiona-storyboards', JSON.stringify([data.storyboard]));
+      router.push(`/storyboard?id=${encodeURIComponent(data.storyboard.id)}`);
+    }catch(e){setError(e instanceof Error?e.message:'Could not create storyboard');}
     finally{setBusy(false);}
   }
 
@@ -74,7 +89,7 @@ export default function DirectorPage(){
             </div>
           </article>)}
         </div>
-        <div className="workflowUpload"><div><b>Director notes</b>{plan.notes.map((n,i)=><p key={i}>{n}</p>)}</div></div>
+        <div className="workflowUpload"><div><b>Director notes</b>{plan.notes.map((n,i)=><p key={i}>{n}</p>)}</div><button className="primary" disabled={busy} onClick={sendToStoryboard}><Clapperboard size={15}/> Send to Storyboard</button></div>
       </div>}
     </section>
   </main>;
