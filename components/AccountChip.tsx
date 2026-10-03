@@ -11,13 +11,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LogOut, User } from 'lucide-react';
-import { currentSession, logout } from '@/lib/auth';
+
 
 export default function AccountChip() {
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    setEmail(currentSession()?.email ?? null);
+    fetch('/api/auth/session', { cache: 'no-store' }).then((r) => r.json()).then((data) => setEmail(data?.user?.email ?? null)).catch(() => setEmail(null));
   }, []);
 
   if (!email) {
@@ -38,8 +38,7 @@ export default function AccountChip() {
         aria-label="Sign out"
         title="Sign out"
         onClick={() => {
-          logout();
-          setEmail(null);
+          fetch('/api/auth/logout', { method: 'POST' }).finally(() => setEmail(null));
           window.location.href = '/';
         }}
       >
