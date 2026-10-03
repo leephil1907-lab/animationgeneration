@@ -83,12 +83,13 @@ export async function getServerUser(): Promise<AuthUser | null> {
   const c = config();
   if (!c) return null;
   const jar = await cookies();
-  let access = jar.get(ACCESS)?.value;
+  let access: string | undefined = jar.get(ACCESS)?.value;
   if (!access) return null;
   let response = await authFetch('/user', { headers: { Authorization: `Bearer ${access}` } });
   if (response.status === 401) {
-    access = await refreshIfNeeded();
-    if (!access) return null;
+    const refreshed = await refreshIfNeeded();
+    if (!refreshed) return null;
+    access = refreshed;
     response = await authFetch('/user', { headers: { Authorization: `Bearer ${access}` } });
   }
   if (!response.ok) return null;
