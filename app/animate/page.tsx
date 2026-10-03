@@ -29,6 +29,15 @@ export default function AnimatePage() {
   const [workflow, setWorkflow] = useState<File | null>(null);
   const [tokens, setTokens] = useState<string[]>([]);
   const [prompt, setPrompt] = useState('');
+  const [duration, setDuration] = useState(15);
+  const [aspect, setAspect] = useState('9:16');
+  const [fps, setFps] = useState(30);
+  const [camera, setCamera] = useState('Extreme close-up');
+  const [motion, setMotion] = useState('Subtle');
+  const [texture, setTexture] = useState('Natural detail');
+  const [lighting, setLighting] = useState('Natural event');
+  const [identity, setIdentity] = useState('Strong');
+  const [wardrobe, setWardrobe] = useState('Keep character wardrobe');
   const [phase, setPhase] = useState<Phase>('idle');
   const [status, setStatus] = useState('Ready');
   const [job, setJob] = useState<MotionaJob | null>(null);
@@ -131,7 +140,13 @@ export default function AnimatePage() {
           workflow: graph,
           worker,
           workflowName: workflow.name,
-          values: { prompt: prompt.trim() || `Video workflow: ${worker}` },
+          values: {
+            prompt: prompt.trim() || `Video workflow: ${worker}`,
+            duration, fps,
+            frames: Math.max(1, Math.round(duration * fps)),
+            aspectRatio: aspect,
+            camera, motion, texture, lighting, identity, wardrobe,
+          },
         }),
       });
       const data = await response.json();
@@ -226,6 +241,44 @@ export default function AnimatePage() {
               placeholder="Describe the motion and subject of this shot"
               onChange={(e) => setPrompt(e.target.value)}
             />
+          </div>
+        </div>
+
+        <div className="workflowUpload videoComposerPanel">
+          <div>
+            <b>Video composer</b>
+            <p>Creator controls are translated into workflow values; your ComfyUI graph remains behind the server boundary.</p>
+          </div>
+          <div className="controlsGrid">
+            <label>Duration
+              <select value={duration} onChange={e=>setDuration(Number(e.target.value))}>
+                {[5,10,15,30,60].map(v=><option key={v} value={v}>{v}s</option>)}
+              </select>
+            </label>
+            <label>Format
+              <select value={aspect} onChange={e=>setAspect(e.target.value)}><option>9:16</option><option>16:9</option><option>1:1</option></select>
+            </label>
+            <label>Frame rate
+              <select value={fps} onChange={e=>setFps(Number(e.target.value))}><option value={24}>24 FPS</option><option value={30}>30 FPS</option><option value={60}>60 FPS</option></select>
+            </label>
+            <label>Camera
+              <select value={camera} onChange={e=>setCamera(e.target.value)}><option>Extreme close-up</option><option>Close-up</option><option>Medium tracking</option><option>Wide cinematic</option><option>POV</option></select>
+            </label>
+            <label>Motion
+              <select value={motion} onChange={e=>setMotion(e.target.value)}><option>Subtle</option><option>Natural</option><option>Dynamic</option><option>High energy</option></select>
+            </label>
+            <label>Identity lock
+              <select value={identity} onChange={e=>setIdentity(e.target.value)}><option>Strong</option><option>Balanced</option><option>Creative</option></select>
+            </label>
+            <label>Skin / texture
+              <select value={texture} onChange={e=>setTexture(e.target.value)}><option>Natural detail</option><option>Soft cinematic</option><option>Documentary</option></select>
+            </label>
+            <label>Lighting
+              <select value={lighting} onChange={e=>setLighting(e.target.value)}><option>Natural event</option><option>Soft studio</option><option>Neon night</option><option>Golden hour</option></select>
+            </label>
+            <label>Wardrobe
+              <select value={wardrobe} onChange={e=>setWardrobe(e.target.value)}><option>Keep character wardrobe</option><option>Formal</option><option>Casual</option><option>Futurist</option><option>Custom via prompt</option></select>
+            </label>
           </div>
         </div>
 
