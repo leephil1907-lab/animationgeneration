@@ -7,6 +7,7 @@ import { writeRecord } from '@/lib/storage';
 import { framesFor } from '@/lib/storyboard';
 import type { MotionaJob } from '@/lib/jobs';
 import { requireSameOrigin, validateContentLength } from '@/lib/api-security';
+import { requireServerUser } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
   const denied = requireSameOrigin(req) || validateContentLength(req);
   if (denied) return denied;
   try {
+    const user = await requireServerUser();
     const body = (await req.json()) as QueueBody;
     const worker = String(body.worker || 'ComfyUI video worker').slice(0, 120);
 
@@ -178,6 +180,7 @@ export async function POST(req: Request) {
       prompt: promptText,
       outputs: [],
       pollCount: 0,
+      owner: user.id,
     };
 
     // Server-side write is what makes the gallery durable. If it fails the job
