@@ -3,6 +3,7 @@ import { resolveJobState } from '@/lib/comfy/client';
 import { listRecords, readRecord, writeRecord } from '@/lib/storage';
 import { isTerminal, type MotionaJob } from '@/lib/jobs';
 import { requireSameOrigin } from '@/lib/api-security';
+import { requireServerUser } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,6 +29,7 @@ const MAX_POLLS_BEFORE_GIVEUP = Number(process.env.MOTIONA_MAX_POLLS || 240);
 export async function GET(_req: Request, { params }: { params: Promise<{ promptId: string }> }) {
   const denied = requireSameOrigin(_req);
   if (denied) return denied;
+  const user = await requireServerUser();
   const { promptId } = await params;
 
   if (!promptId || !promptId.trim()) {
@@ -37,7 +39,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ promptI
   const state = await resolveJobState(promptId);
 
   // Locate the persisted job so its status and outputs advance too.
-  let job = await findJobByPromptId(promptId);
+  let job = await findJobByPromptId(promptId, user.id);
 
   if (job) {
     const next: MotionaJob = {
@@ -97,10 +99,10 @@ function changed(before: MotionaJob, after: MotionaJob): boolean {
  * id. Search the store; the collection is small and this runs at most once per
  * poll. An index can be added if job counts grow.
  */
-async function findJobByPromptId(promptId: string): Promise<MotionaJob | null> {
+async function findJobByPromptId(promptId: string, owner: string): Promise<MotionaJob | null> {
   const direct = await readRecord<MotionaJob>('jobs', promptId);
-  if (direct && direct.promptId === promptId) return direct;
+  if (direct && direct.promptId === promptId && direct.owner === owner) return direct;
 
   const jobs = await listRecords<MotionaJob>('jobs', 500);
-  return jobs.find((job) => job.promptId === promptId) || null;
+  return jobs.find((job) => job.promptId === promptId && job.owner === owner) || null;
 }
