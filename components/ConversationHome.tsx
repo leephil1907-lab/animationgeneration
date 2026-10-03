@@ -132,7 +132,7 @@ export default function ConversationHome(){
 
     <aside className="conversationInspector">
       <div className="inspectorTitle"><span>CREATE WITH {selected.name.toUpperCase()}</span><MoreHorizontal size={16}/></div>
-      <div className="characterCard"><div className="characterPortrait"><CharacterVisual character={selected} className="inspectorPortrait"/></div><b>{selected.name}</b><small>{selected.tagline}</small><p>{selected.style} · identity-aware</p></div>
+      <div className="characterCard"><CharacterVisual character={selected} className={characterStyles.visualLarge}/><b>{selected.name}</b><small>{selected.tagline}</small><p>{selected.style} · identity-aware</p></div>
       <div className="quickCreate"><span>QUICK CREATE</span><Link href="/studio?view=generate"><ImageIcon size={15}/><b>Image</b><small>Portrait or scene</small><ArrowUpRight size={14}/></Link><Link href="/animate"><Video size={15}/><b>Video</b><small>Flexible duration</small><ArrowUpRight size={14}/></Link><Link href="/storyboard"><Clapperboard size={15}/><b>Storyboard</b><small>Build the sequence</small><ArrowUpRight size={14}/></Link></div>
       <div className="creationNote"><Sparkles size={15}/><div><b>One character, many worlds.</b><p>Your character identity can travel from conversation to image, storyboard and animation without exposing the render engine.</p></div></div>
     </aside>
