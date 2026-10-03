@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import BrandMark from '@/components/BrandMark';
+import MotionSampleReel from '@/components/MotionSampleReel';
 import { motion } from 'framer-motion';
 import {
   ArrowUpRight, Play, Sparkles, Wand2, Users, Film, MessageCircle,
@@ -46,6 +47,8 @@ export default function Home() {
           <div className="canvasBottom"><span><Sparkles size={13}/> CONSISTENCY LOCK</span><span>VIOLET / OBSIDIAN</span></div>
         </motion.div>
       </section>
+
+      <MotionSampleReel />
 
       <section className="motionaManifesto"><div><span>01 / THE IDEA</span><h2>One character.<br/><em>Many frames.</em></h2></div><p>Keep the creative identity in one place. References, prompts, voice, scenes and outputs become one continuous workflow instead of a pile of disconnected tools.</p></section>
 
