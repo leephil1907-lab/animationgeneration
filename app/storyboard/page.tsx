@@ -83,21 +83,23 @@ export default function StoryboardPage() {
 
   useEffect(() => {
     const local = loadBoards();
+    const requestedId = new URLSearchParams(window.location.search).get('id');
+    if (requestedId) {
+      void fetchServerBoards().then((serverBoards) => {
+        const requested = serverBoards.find((entry) => entry.id === requestedId);
+        if (requested) setBoard(requested);
+        else setBoard(local.find((entry) => entry.id === requestedId) || local[0] || newStoryboard('MOTIONA sequence'));
+        setHydrated(true);
+      });
+      return;
+    }
     const restored = local[0] || newStoryboard('MOTIONA sequence');
-    // If this browser holds nothing, adopt the newest board the storage adapter
-    // has for this device so a cleared browser still opens onto real work.
     if (local.length === 0) {
       void fetchServerBoards().then((serverBoards) => {
-        if (serverBoards.length === 0) return;
-        setBoard(mergeBoards([], serverBoards)[0]);
+        if (serverBoards.length > 0) setBoard(mergeBoards([], serverBoards)[0]);
+        setHydrated(true);
       });
-    }
-    // Attribute new boards to the signed-in local account, when there is one.
-    if (!restored.owner) {
-      try {
-        const session = JSON.parse(window.localStorage.getItem('motiona-session') || 'null');
-        if (session?.email) restored.owner = String(session.email);
-      } catch { /* no session */ }
+      return;
     }
     setBoard(restored);
     setHydrated(true);
