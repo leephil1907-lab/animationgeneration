@@ -1,13 +1,40 @@
 import { NextResponse } from 'next/server';
+import { comfyBaseUrl, getSystemStats } from '@/lib/comfy/client';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const base = process.env.COMFYUI_URL || 'http://127.0.0.1:8188';
+  const base = comfyBaseUrl();
+  let host = '';
+  let port = '';
+  let secure = false;
   try {
-    const response = await fetch(`${base.replace(/\/$/, '')}/system_stats`, { cache: 'no-store' });
-    if (!response.ok) return NextResponse.json({ connected:false, url:base, error:`ComfyUI returned ${response.status}` }, { status:502 });
-    const data = await response.json();
-    return NextResponse.json({ connected:true, url:base, mock:Boolean(data?.mock), system:data });
-  } catch {
-    return NextResponse.json({ connected:false, url:base, error:'ComfyUI is unreachable' }, { status:503 });
+    const parsed = new URL(base);
+    host = parsed.hostname;
+    port = parsed.port || (parsed.protocol === 'https:' ? '443' : '80');
+    secure = parsed.protocol === 'https:';
+  } catch {}
+
+  try {
+    const system = await getSystemStats();
+    return NextResponse.json({
+      configured: Boolean(process.env.COMFYUI_URL),
+      connected: true,
+      secure,
+      host,
+      port,
+      mock: Boolean(system?.mock),
+      system,
+    });
+  } catch (error) {
+    return NextResponse.json({
+      configured: Boolean(process.env.COMFYUI_URL),
+      connected: false,
+      secure,
+      host,
+      port,
+      error: error instanceof Error ? error.message : 'ComfyUI is unreachable',
+    }, { status: 503 });
   }
 }
