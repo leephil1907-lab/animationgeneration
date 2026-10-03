@@ -43,7 +43,7 @@ export default function AgeGate({ children }: { children: ReactNode }) {
             <Check size={16} aria-hidden="true" /> I am 18 or older — Enter
           </button>
           <button className="secondary ageLeave" onClick={leave}>
-            <X size={16} aria-hidden="true" /> Leave
+            <X size={16} aria-hidden="true" /> I am under 18 — Leave
           </button>
         </div>
         <p className="ageLegal">

@@ -17,7 +17,44 @@ String values in the workflow can contain:
 - `__WIDTH__` — requested width
 - `__HEIGHT__` — requested height
 
-The studio submits the substituted API graph to ComfyUI through `/api/comfyui/workflow`.
+Added for the storyboard → worker handoff:
+
+- `__FRAMES__` — frame count derived from the shot's duration and fps
+- `__FPS__` — output frame rate
+- `__DURATION__` — shot duration in seconds
+- `__CAMERA__` — camera move selected for the shot
+- `__SCENE__` — scene label
+- `__SHOT_INDEX__` — position in the timeline
+- `__CHARACTER_NAME__` / `__CHARACTER_TRAITS__` — sequence identity anchor
+- `__STEPS__` / `__CFG__` / `__DENOISE__` — sampler parameters
+
+The studio submits the substituted API graph to ComfyUI through
+`/api/comfyui/workflow`, or through `/api/video/queue` when the shot comes from a
+storyboard. Substitution lives in `lib/comfy/tokens.ts` and is shared by both.
+
+### Numeric coercion
+
+A field holding nothing but a token is coerced back to a number after
+substitution, so `"seed": "__SEED__"` arrives at ComfyUI as an integer rather than
+a string. Coercion applies to the keys ComfyUI expects as ints (`seed`,
+`noise_seed`, `width`, `height`, `batch_size`, `steps`, `length`, `frames`,
+`frame_rate`, `fps`, `context_length`) and floats (`cfg`, `denoise`,
+`strength_model`, `strength_clip`, `lora_strength`).
+
+### Token reporting
+
+Both submission routes return `usedTokens`, the set of tokens actually found in
+the template. The storyboard and Animate screens show this on import, so an
+operator can confirm a template is wired to the fields they expect before
+rendering a whole sequence.
+
+## Graph validation
+
+Before submission, `validateGraph` checks that every `["<nodeId>", <slot>]` link
+resolves to a node the graph defines. A dangling reference is rejected with a 400
+naming the node and input, instead of reaching ComfyUI and producing an opaque
+server-side error. Exotic graphs can opt out with `skipValidation: true`, in which
+case the problems are still returned as `validationWarnings`.
 
 ## Why this is template based
 

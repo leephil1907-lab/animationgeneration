@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ImagePlus, Sparkles, Wand2, Upload, UserRound, Film, SlidersHorizontal, Cpu, RefreshCw, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
+import AccountChip from '@/components/AccountChip';
 import ChatPanel from '@/components/ChatPanel';
 import { buildCharacterProfile, type CharacterProfile } from '@/lib/character-profile';
 
@@ -169,7 +170,7 @@ export default function Home() {
         <button className={active==='outputs'?'nav active':'nav'} onClick={()=>setActive('outputs')}>Outputs</button>
         <button className={active==='chat'?'nav active':'nav'} onClick={()=>setActive('chat')}>Chat</button><a className="nav navLink" href="/storyboard">Storyboard</a><a className="nav navLink" href="/animate">Animate</a><a className="nav navLink" href="/gallery">Gallery</a>
       </nav>
-      <div className="accountLinks"><a href="/login">Sign in</a><a className="accountCta" href="/signup">Create account</a></div>
+      <div className="accountLinks"><AccountChip /></div>
       <div className="status"><i className={comfy==='connected'?'online':''}/>{comfy==='connected'?'ComfyUI connected':comfy==='offline'?'ComfyUI offline':'Checking ComfyUI…'}</div>
     </header>
 

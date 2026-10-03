@@ -12,7 +12,7 @@ export async function POST(request:Request){
     const character=JSON.parse(raw) as CharacterProfile;
     if(!character?.name) return NextResponse.json({error:'character.name is required'},{status:400});
     let settings:GenerationSettings={}; try{ settings=JSON.parse(rawSettings); }catch{ return NextResponse.json({error:'settings must be valid JSON'},{status:400}); }
-    const normalized=normalizeSettings(settings);
+    const normalized=normalizeSettings(settings,mode);
     if(!normalized.checkpoint) return NextResponse.json({error:'No ComfyUI checkpoint selected. Install a checkpoint and refresh the model list.'},{status:400});
     let referenceFilename='';
     if(image instanceof File){
