@@ -10,7 +10,7 @@
  */
 
 import puppeteer from 'puppeteer';
-import { mkdirSync, readdirSync, statSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,6 +18,11 @@ const APP = process.env.APP || 'http://127.0.0.1:3000';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SHOTS = path.join(HERE, '..', 'docs', 'screenshots');
 mkdirSync(SHOTS, { recursive: true });
+
+/* Start from a pristine durable record: the storage adapter must not carry
+   boards or jobs in from an earlier run, or fresh-browser assertions would
+   adopt someone else's sequence. */
+rmSync(path.join(HERE, '..', '.motiona-data'), { recursive: true, force: true });
 
 let pass = 0;
 let fail = 0;
@@ -60,6 +65,12 @@ try {
   section('1. Storyboard loads and hydrates');
   await page.goto(`${APP}/storyboard`, { waitUntil: 'networkidle2', timeout: 45000 });
 
+  // The gate mounts with hydration; wait for it OR the content so a slow
+  // first compile cannot race the presence check.
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('.ageEnter') || document.querySelector('.sequencePanel')),
+    { timeout: 30000 },
+  );
   const gate = await page.$('.ageEnter');
   if (gate) {
     await gate.click();
@@ -391,6 +402,8 @@ try {
   /* ------------------------------------------------- accounts + dashboard */
   section('10. Signup leads to a dashboard');
   await page.goto(`${APP}/signup`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.waitForSelector('.authForm', { timeout: 15000 });
+  await sleep(600); // let hydration attach the controlled-input handlers
 
   await page.evaluate(() => {
     const set = (el, value) => {
@@ -406,11 +419,11 @@ try {
   });
   await page.click('.authSubmit');
 
-  await page.waitForFunction(() => window.location.pathname === '/dashboard', { timeout: 10000 })
+  await page.waitForFunction(() => window.location.pathname === '/dashboard', { timeout: 20000 })
     .then(() => ok('signup redirects to /dashboard'))
     .catch(async () => bad('signup redirects to /dashboard', await page.evaluate(() => window.location.pathname)));
 
-  await page.waitForSelector('.dashTiles', { timeout: 10000 });
+  await page.waitForSelector('.dashTiles', { timeout: 20000 });
   ok('dashboard rendered');
 
   const greeting = await page.$eval('.productIntro h1', (el) => el.textContent.trim());
@@ -420,6 +433,8 @@ try {
   JSON.stringify(tiles) === JSON.stringify(['/studio', '/storyboard', '/animate', '/gallery'])
     ? ok('dashboard navigates to every workspace surface')
     : bad('dashboard navigates to every workspace surface', tiles.join(','));
+
+  await page.screenshot({ path: path.join(SHOTS, '06-dashboard.png'), fullPage: true });
 
   const chip = await page.$eval('.accountChip', (el) => el.textContent.trim());
   /sable@example.com/.test(chip) ? ok(`account chip shows the signed-in email (${chip})`) : bad('account chip shows the signed-in email', chip);
@@ -447,12 +462,15 @@ try {
     .then(() => ok('sign out returns to the landing page'))
     .catch(async () => bad('sign out returns to the landing page', await page.evaluate(() => window.location.pathname)));
 
+  await page.goto(`${APP}/login`, { waitUntil: 'networkidle2', timeout: 45000 }); // warm the route compile
   await page.goto(`${APP}/dashboard`, { waitUntil: 'networkidle2', timeout: 45000 });
-  await page.waitForFunction(() => window.location.pathname === '/login', { timeout: 8000 })
+  await page.waitForFunction(() => window.location.pathname === '/login', { timeout: 15000 })
     .then(() => ok('dashboard is guarded — signed-out visitors bounce to /login'))
     .catch(async () => bad('dashboard is guarded', await page.evaluate(() => window.location.pathname)));
 
   /* login restores the session */
+  await page.waitForSelector('.authForm', { timeout: 15000 });
+  await sleep(500);
   await page.evaluate(() => {
     const set = (el, value) => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -464,7 +482,7 @@ try {
     set(inputs[1], 'harbour-sequence-18');
   });
   await page.click('.authSubmit');
-  await page.waitForFunction(() => window.location.pathname === '/dashboard', { timeout: 10000 })
+  await page.waitForFunction(() => window.location.pathname === '/dashboard', { timeout: 20000 })
     .then(() => ok('login restores the session and opens the dashboard'))
     .catch(async () => bad('login restores the session', await page.evaluate(() => window.location.pathname)));
 
@@ -491,9 +509,109 @@ try {
     ? ok('wrong password is refused with a clear message')
     : bad('wrong password is refused', authError || 'no error shown');
 
-  await page.screenshot({ path: path.join(SHOTS, '06-dashboard.png'), fullPage: true });
 
   /* -------------------------------------------------------- console health */
+  section('11. Work survives a cleared browser (server-side records)');
+  /* section 10 ended on a deliberately failed login, so sign back in first */
+  await page.goto(`${APP}/login`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.waitForSelector('.authForm', { timeout: 15000 });
+  await sleep(500);
+  await page.evaluate(() => {
+    const set = (el, value) => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      setter.call(el, value);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    const inputs = document.querySelectorAll('.authForm input');
+    set(inputs[0], 'sable@example.com');
+    set(inputs[1], 'harbour-sequence-18');
+  });
+  await page.click('.authSubmit');
+  await page.waitForFunction(() => window.location.pathname === '/dashboard', { timeout: 20000 });
+
+  await page.goto(`${APP}/storyboard`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.waitForSelector('.sequencePanel', { timeout: 15000 });
+  await sleep(800);
+
+  await page.evaluate(() => {
+    const set = (el, value) => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      setter.call(el, value);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    set(document.querySelector('.sequenceFields label input'), 'Harbour Survivor Cut');
+  });
+  await sleep(1600); // debounced save -> localStorage AND POST /api/storyboards
+
+  const serverTitles = await page.evaluate(async () => {
+    const res = await fetch('/api/storyboards', { cache: 'no-store' });
+    const data = await res.json();
+    return (data.storyboards || []).map((b) => b.title);
+  });
+  serverTitles.includes('Harbour Survivor Cut')
+    ? ok('renamed sequence reached the server store')
+    : bad('renamed sequence reached the server store', serverTitles.join(' | '));
+
+  await page.goto(`${APP}/dashboard`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.waitForSelector('.dashTiles', { timeout: 20000 });
+  await sleep(1200); // allow the server merge to land
+  const rowsBeforeWipe = await page.$$eval('.dashRow b', (els) => els.map((e) => e.textContent.trim()));
+  rowsBeforeWipe.includes('Harbour Survivor Cut')
+    ? ok('dashboard lists the server-backed sequence')
+    : bad('dashboard lists the server-backed sequence', rowsBeforeWipe.join(' | '));
+
+  /* wipe the browser: accounts, session, cached boards and cached jobs all go */
+  await page.evaluate(() => window.localStorage.clear());
+  await page.reload({ waitUntil: 'networkidle2', timeout: 45000 });
+  await page.waitForSelector('.ageEnter', { timeout: 10000 });
+  await page.click('.ageEnter');
+  await sleep(600);
+  ok('age gate re-appears after a storage wipe (never skipped)');
+
+  await page.goto(`${APP}/signup`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.waitForSelector('.authForm', { timeout: 15000 });
+  await sleep(600);
+  await page.evaluate(() => {
+    const set = (el, value) => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      setter.call(el, value);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    const inputs = document.querySelectorAll('.authForm input');
+    set(inputs[0], 'Sable Navigator');
+    set(inputs[1], 'sable@example.com');
+    set(inputs[2], 'harbour-sequence-18');
+    inputs[3].click();
+  });
+  await page.click('.authSubmit');
+  await page.waitForFunction(() => window.location.pathname === '/dashboard', { timeout: 20000 })
+    .then(() => ok('re-signup with the same email lands back on the dashboard'))
+    .catch(async () => bad('re-signup with the same email lands back on the dashboard',
+      await page.evaluate(() => window.location.pathname)));
+
+  await page.waitForSelector('.dashTiles', { timeout: 20000 });
+  await sleep(1500); // server merge repopulates the panels
+  const rowsAfterWipe = await page.$$eval('.dashRow b', (els) => els.map((e) => e.textContent.trim()));
+  rowsAfterWipe.includes('Harbour Survivor Cut')
+    ? ok('sequence survived the cleared browser via the server store')
+    : bad('sequence survived the cleared browser via the server store', rowsAfterWipe.join(' | ') || 'no rows at all');
+
+  const syncNoteText = await page.$eval('.authDemoNote', (el) => el.textContent);
+  /\(synced\)/.test(syncNoteText)
+    ? ok('dashboard reports that the server sync completed')
+    : bad('dashboard reports that the server sync completed', syncNoteText.trim().slice(0, 90));
+
+  await page.screenshot({ path: path.join(SHOTS, '07-persistence.png'), fullPage: true });
+
+  await page.goto(`${APP}/storyboard`, { waitUntil: 'networkidle2', timeout: 45000 });
+  await page.waitForSelector('.sequencePanel', { timeout: 15000 });
+  await sleep(1500);
+  const rehydratedTitle = await page.$eval('.sequenceFields label input', (el) => el.value);
+  rehydratedTitle === 'Harbour Survivor Cut'
+    ? ok('storyboard hydrates the server copy into an empty browser')
+    : bad('storyboard hydrates the server copy into an empty browser', rehydratedTitle);
+
+
   section('9. Console and network health');
   const realErrors = consoleErrors.filter((t) => !/favicon|Download the React DevTools/i.test(t));
   realErrors.length === 0 ? ok('no console errors') : bad('no console errors', realErrors.slice(0, 4).join('\n     '));

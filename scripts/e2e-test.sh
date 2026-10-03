@@ -23,6 +23,10 @@ check() { # check <name> <actual> <expected>
   if [ "$2" = "$3" ]; then ok "$1"; else bad "$1" "expected '$3', got '$2'"; fi
 }
 
+# Deterministic start: drop the durable store so no boards or jobs leak in
+# from an earlier run (the storage adapter reads the disk on every request).
+rm -rf "$(cd "$(dirname "$0")/.." && pwd)/.motiona-data"
+
 # ---------------------------------------------------------------- connectivity
 section "0. Backends reachable"
 APP_CODE=$(curl -s -o /dev/null -w '%{http_code}' "$APP/")

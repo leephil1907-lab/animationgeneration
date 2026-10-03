@@ -228,3 +228,69 @@ Modified: `lib/comfy/workflow.ts`, `app/api/comfyui/character/route.ts`,
 
 Also fixed a pre-existing `autoprefixer` warning (`align-items:end` → `flex-end`
 in `.galleryHead`) that fired on every compile.
+
+---
+
+## Phase 5 — server-backed dashboard and the MOTIONA Studio brand
+
+The sixth request asked for four things: wire the dashboard to the server side so
+work survives a cleared browser, rename the app to MOTIONA Studio, give it an icon
+and matching description, and give the website a logo.
+
+### Server-backed dashboard
+
+- `lib/storyboard.ts` gained `fetchServerBoards()` and `mergeBoards()` — the
+  storyboard equivalents of the job store's `fetchServerJobs()` / `mergeJobs()`.
+  Merges are keyed by id and resolve conflicts by `updatedAt`.
+- `/dashboard` now paints the browser cache first and then reconciles against
+  `GET /api/storyboards` + `GET /api/jobs`, filtered to the signed-in account
+  (`owner === email`, plus unattributed legacy records). A "(synced)" marker in
+  the demo-auth note confirms the server pass completed.
+- `/storyboard` hydrates from the server store when the browser holds no boards,
+  adopting the most recently updated one — so an empty browser opens onto real
+  work instead of a blank sequence.
+- Consequence verified by test: wipe `localStorage`, sign up again with the same
+  email, and the dashboard still lists the sequence and its renders. The account
+  itself remains device-local; the *work* is what survives.
+
+### Brand
+
+- Every "Animation Generation Studio" string is now **MOTIONA Studio**
+  (studio footer, auth shell, workflow docs, metadata, manifest).
+- `public/icon.svg`: 512 tile, `#241b36 → #0b0a10` gradient, white M monogram with
+  a ringed purple play triangle. `scripts/make-icons.py` renders the same geometry
+  to `public/icons/icon-512.png`, `icon-192.png` and `apple-touch-icon.png` so the
+  raster and vector marks match exactly.
+- `public/logo.svg`: horizontal lockup (mark + MOTIONA wordmark + STUDIO tag) on a
+  transparent background, used by the landing page; `components/BrandMark.tsx`
+  renders the mark inline (useId-scoped gradient ids) in the nav, auth shell and
+  dashboard.
+- `public/manifest.webmanifest` and `app/layout.tsx` metadata carry the new name,
+  description ("Local-first AI character and animation workspace: consistent
+  characters, storyboarded shots and ComfyUI-powered rendering — private by
+  design"), theme colour `#8b5cf6` and icon set.
+
+### Test hygiene learned the hard way
+
+Server-side persistence made the suites order-dependent: a fresh browser now
+*adopts* server boards, so boards left in `.motiona-data/` by a previous run broke
+"shot starts as Draft". Both suites now purge `.motiona-data/` at startup, and the
+UI suite settles for hydration before filling auth forms (first-visit dev compiles
+of `/login` and `/signup` raced the clicks).
+
+- `scripts/e2e-test.sh`: 40/40.
+- `scripts/ui-test.mjs`: 65/65, including new section 11 — rename a sequence,
+  confirm it reached the server store, wipe the browser, re-signup, and watch the
+  dashboard and storyboard restore it (`docs/screenshots/07-persistence.png`).
+- `npm run typecheck` and `npm run build` clean.
+
+### Files touched in Phase 5
+
+New: `components/BrandMark.tsx`, `scripts/make-icons.py`, `public/icons/*`.
+
+Rewritten: `public/icon.svg`, `public/logo.svg`, `public/manifest.webmanifest`.
+
+Modified: `app/layout.tsx`, `app/dashboard/page.tsx`, `app/storyboard/page.tsx`,
+`lib/storyboard.ts`, `components/AuthShell.tsx`, `app/studio/page.tsx`,
+`comfyui/WORKFLOW-TEMPLATES.md`, `app/globals.css`, `scripts/ui-test.mjs`,
+`scripts/e2e-test.sh`, `README.md`.

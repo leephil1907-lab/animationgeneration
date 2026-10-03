@@ -1,1 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180"><rect width="720" height="180" rx="32" fill="#09090b"/><path d="M58 136V44h31l34 58 34-58h31v92h-29V84l-36 59h-1L86 84v52z" fill="#fff"/><path d="M138 44h42l-21 37z" fill="#8b5cf6"/><text x="224" y="111" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="64" font-weight="700" letter-spacing="8">MOTIONA</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 200" role="img" aria-label="MOTIONA Studio">
+  <defs>
+    <linearGradient id="maLogoBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#241b36"/>
+      <stop offset="1" stop-color="#0b0a10"/>
+    </linearGradient>
+    <linearGradient id="maLogoPlay" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a78bfa"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <!-- mark tile -->
+  <g>
+    <rect x="8" y="16" width="168" height="168" rx="40" fill="url(#maLogoBg)"/>
+    <g transform="translate(8 16) scale(0.328125)">
+      <path d="M118 356V156h68l70 118 70-118h68v200h-64V257l-74 121h-2l-74-121v99z" fill="#ffffff"/>
+      <circle cx="350" cy="190" r="62" fill="none" stroke="#8b5cf6" stroke-opacity="0.5" stroke-width="8"/>
+      <path d="M306 156h88l-44 76z" fill="url(#maLogoPlay)"/>
+    </g>
+  </g>
+  <!-- wordmark -->
+  <text x="212" y="118" fill="#10130f" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="76" font-weight="800" letter-spacing="10">MOTIONA</text>
+  <text x="216" y="158" fill="#8b5cf6" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" letter-spacing="18">STUDIO</text>
+</svg>

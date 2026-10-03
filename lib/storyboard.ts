@@ -182,6 +182,42 @@ export function saveBoard(board: Storyboard): Storyboard {
   return next;
 }
 
+/**
+ * Fetch persisted boards from the storage adapter.
+ *
+ * The dashboard and storyboard hydrate from here so work survives a cleared
+ * browser: localStorage is a cache, the server store is the record.
+ */
+export async function fetchServerBoards(): Promise<Storyboard[]> {
+  try {
+    const response = await fetch('/api/storyboards', { cache: 'no-store' });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data?.storyboards) ? data.storyboards : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Union two board lists by id, preferring whichever copy changed most recently. */
+export function mergeBoards(a: Storyboard[], b: Storyboard[]): Storyboard[] {
+  const byId = new Map<string, Storyboard>();
+  for (const board of [...a, ...b]) {
+    if (!board?.id) continue;
+    const existing = byId.get(board.id);
+    if (!existing) {
+      byId.set(board.id, board);
+      continue;
+    }
+    const existingScore = Date.parse(existing.updatedAt || existing.createdAt || '') || 0;
+    const incomingScore = Date.parse(board.updatedAt || board.createdAt || '') || 0;
+    if (incomingScore > existingScore) byId.set(board.id, board);
+  }
+  return [...byId.values()].sort(
+    (x, y) => (Date.parse(y.updatedAt || y.createdAt || '') || 0) - (Date.parse(x.updatedAt || x.createdAt || '') || 0),
+  );
+}
+
 export function deleteBoardLocal(id: string): Storyboard[] {
   const store = browserStore();
   if (!store) return [];

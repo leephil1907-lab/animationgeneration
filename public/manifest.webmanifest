@@ -1,13 +1,36 @@
 {
-  "name": "MOTIONA — AI Character & Animation Studio",
+  "name": "MOTIONA Studio \u2014 AI Character & Animation Workspace",
   "short_name": "MOTIONA",
-  "description": "Local-first AI character, voice and animation workspace powered by ComfyUI.",
+  "description": "Local-first AI character and animation workspace: consistent characters, storyboarded shots and ComfyUI-powered rendering. Outputs stay on your machine. 18+ creative workspace.",
+  "id": "/",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#09090b",
+  "background_color": "#0b0a10",
   "theme_color": "#8b5cf6",
   "orientation": "portrait-primary",
+  "categories": [
+    "photo",
+    "productivity",
+    "graphics"
+  ],
   "icons": [
-    {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }

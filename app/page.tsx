@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import BrandMark from '@/components/BrandMark';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Play, Sparkles, Wand2, Users, Film, MessageCircle, ChevronDown } from 'lucide-react';
 
@@ -10,7 +11,7 @@ export default function Home(){
  return <main className="landing">
   <div className="landingGrid"/>
   <header className="siteNav">
-   <Link href="/" className="siteLogo"><span className="siteLogoMark"><Sparkles size={16}/></span><span>MOTION<b>A</b></span></Link>
+   <Link href="/" className="siteLogo"><BrandMark size={30}/><span>MOTION<b>A</b><i className="studioTag">STUDIO</i></span></Link>
    <nav className="siteLinks">{nav.map(([label,href])=><Link key={label} href={href}>{label}</Link>)}</nav>
    <div className="siteActions"><Link href="/login" className="siteSign">Sign in</Link><Link href="/signup" className="siteCta">Start creating <ArrowUpRight size={14}/></Link></div>
   </header>

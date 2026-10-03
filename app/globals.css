@@ -345,3 +345,14 @@ margin-top:20px;border-top:1px solid var(--ma-line);padding-top:16px;flex-wrap:w
 .dashTiles{grid-template-columns:1fr}
 .dashStats{grid-template-columns:1fr 1fr}
 }
+
+/* ============================================================
+   MOTIONA Studio brand lockup
+   ============================================================ */
+.studioTag{font-style:normal;font-size:8px;letter-spacing:.32em;color:var(--ma-accent);
+margin-left:7px;font-weight:700;vertical-align:2px}
+.siteLogo .studioTag{color:#a78bfa}
+.dashBrand{display:flex;align-items:center;gap:9px;color:var(--ma-ink);text-decoration:none;
+font-weight:900;letter-spacing:.12em;font-size:12px;white-space:nowrap}
+.authMark{line-height:0;margin-bottom:14px}
+.motionaBrand{display:flex;align-items:center;gap:9px;color:var(--ma-ink);text-decoration:none}

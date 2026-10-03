@@ -20,8 +20,12 @@ import {
   User, Video, Wand2,
 } from 'lucide-react';
 import { currentSession, logout, type Session } from '@/lib/auth';
+import BrandMark from '@/components/BrandMark';
 import { fetchServerJobs, isTerminal, loadJobs, mergeJobs, type MotionaJob } from '@/lib/jobs';
-import { loadBoards, shotProgress, totalRuntime, formatRuntime, type Storyboard } from '@/lib/storyboard';
+import {
+  fetchServerBoards, formatRuntime, loadBoards, mergeBoards, shotProgress, totalRuntime,
+  type Storyboard,
+} from '@/lib/storyboard';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -29,6 +33,7 @@ export default function DashboardPage() {
   const [checked, setChecked] = useState(false);
   const [boards, setBoards] = useState<Storyboard[]>([]);
   const [jobs, setJobs] = useState<MotionaJob[]>([]);
+  const [synced, setSynced] = useState(false);
 
   /* ------------------------------------------------------- session guard */
   useEffect(() => {
@@ -43,10 +48,18 @@ export default function DashboardPage() {
 
   const refresh = useCallback(() => {
     const mine = (owner?: string) => !owner || !session || owner === session.email;
+
+    // Paint the browser cache immediately…
     setBoards(loadBoards().filter((board) => mine(board.owner)));
     setJobs(mergeJobs(loadJobs(), []).filter((job) => mine(job.owner)));
-    void fetchServerJobs().then((serverJobs) => {
+
+    // …then reconcile against the server store, which is the durable record.
+    // This is what makes the dashboard survive a cleared browser: re-signing in
+    // with the same email restores everything the storage adapter holds.
+    void Promise.all([fetchServerBoards(), fetchServerJobs()]).then(([serverBoards, serverJobs]) => {
+      setBoards(mergeBoards(loadBoards(), serverBoards).filter((board) => mine(board.owner)));
       setJobs(mergeJobs(loadJobs(), serverJobs).filter((job) => mine(job.owner)));
+      setSynced(true);
     });
   }, [session]);
 
@@ -83,7 +96,7 @@ export default function DashboardPage() {
   return (
     <main className="productPage">
       <header className="productHeader">
-        <Link href="/"><Sparkles size={15} /> MOTIONA</Link>
+        <Link href="/" className="dashBrand"><BrandMark size={26} /> MOTIONA<i className="studioTag">STUDIO</i></Link>
         <strong>MOTIONA / DASHBOARD</strong>
         <span className="accountChip">
           <User size={12} /> {session.name} · {session.email}
@@ -186,8 +199,10 @@ export default function DashboardPage() {
 
         <div className="dashFooter">
           <p className="authDemoNote">
-            Local demo account: your profile and session exist only in this browser. There is no
-            server-side account store, so this device is the only place you are signed in.
+            Local demo account: your profile and session exist only in this browser, so this device
+            is the only place you are signed in. Your <b>work</b>, however, is stored server-side in
+            the local disk store{synced ? ' (synced)' : ''} — clear the browser and signing back in
+            with the same email brings your sequences and jobs with you.
           </p>
           <button className="secondary" onClick={signOut}>
             <LogOut size={14} /> Sign out

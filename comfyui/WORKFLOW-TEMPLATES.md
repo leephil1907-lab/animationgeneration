@@ -1,6 +1,6 @@
 # ComfyUI workflow templates
 
-Animation Generation Studio supports imported ComfyUI API-format workflows rather than assuming a universal Wan or AnimateDiff graph.
+MOTIONA Studio supports imported ComfyUI API-format workflows rather than assuming a universal Wan or AnimateDiff graph.
 
 ## Export
 

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Sparkles, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { ReactNode } from 'react';
+import BrandMark from '@/components/BrandMark';
 
 export default function AuthShell({mode,children}:{mode:'login'|'signup';children:ReactNode}){
   return <main className="authPage">
@@ -10,8 +11,8 @@ export default function AuthShell({mode,children}:{mode:'login'|'signup';childre
     <Link href="/" className="authBack"><ArrowLeft size={15}/> Back to studio</Link>
     <section className="authLayout">
       <div className="authBrand">
-        <div className="authMark"><Sparkles size={21}/></div>
-        <p className="eyebrow">ANIMATION GENERATION STUDIO</p>
+        <div className="authMark"><BrandMark size={44}/></div>
+        <p className="eyebrow">MOTIONA STUDIO</p>
         <h1>{mode==='login'?'Welcome back.':'Build your creative workspace.'}</h1>
         <p>Keep your characters, generation settings and creative sessions organized in one private studio.</p>
         <div className="authFeature"><ShieldCheck size={17}/><span>Your account layer is designed to sit in front of the studio without changing the local-first generation flow.</span></div>
@@ -24,6 +25,6 @@ export default function AuthShell({mode,children}:{mode:'login'|'signup';childre
         {children}
       </div>
     </section>
-    <p className="authFooter">Animation Generation Studio · 18+ · Creative AI workspace</p>
+    <p className="authFooter">MOTIONA Studio · 18+ · Creative AI workspace</p>
   </main>;
 }

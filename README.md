@@ -116,6 +116,7 @@ STORAGE_PUBLIC_BASE_URL=
 - **Chat + voice** — character-aware interaction with voice-note transcription and TTS/browser speech fallback.
 - **Account layer + dashboard** — `/signup` creates a device-local account and lands on `/dashboard`; `/login` restores the session; `/dashboard` is guarded and links every workspace surface. See "Account layer" below.
 - **Age gate** — a full-app interstitial before any route renders. Confirming 18+ enters; declining navigates the browser away (`about:blank`) so the homepage never loads.
+- **MOTIONA Studio identity** — the studio formerly labelled "Animation Generation Studio" now ships as MOTIONA Studio: an inline SVG brand mark in every header, a wordmark logo on the landing page, a web-app manifest, and installable icons (SVG plus 192/512 PNG and apple-touch).
 
 ### Account layer
 
@@ -132,7 +133,10 @@ cross-device sync. Every surface that uses it says so. Swap the four functions i
 `/dashboard` is client-guarded (no session → `/login`) and shows the account's
 sequences, jobs and stats plus navigation tiles to Studio, Storyboard, Animate and
 Gallery. An account chip in each workspace header links to the dashboard and signs
-out.
+out. The dashboard reconciles the browser cache against the server store on every
+visit, so the work listed there survives a cleared browser: wipe localStorage,
+sign back in with the same email, and every sequence and job the storage adapter
+holds is listed again.
 
 ### Age gate
 
@@ -145,8 +149,11 @@ interstitial, not age verification.
 ### Storage boundary
 
 Jobs and storyboards are written to a local disk store (`.motiona-data/`) on the
-machine running MOTIONA, and mirrored in the browser for instant paint. This is
-**not** cloud storage and is not shared between devices or users.
+machine running MOTIONA, and mirrored in the browser for instant paint. The server
+store is the durable record and the browser is a cache: `fetchServerBoards` /
+`mergeBoards` and `fetchServerJobs` / `mergeJobs` reconcile the two on load, which
+is what lets a cleared browser recover its work. This is **not** cloud storage —
+the store survives a wiped browser on one machine, not a different device.
 
 `lib/storage.ts` is the adapter boundary: `STORAGE_PROVIDER` selects the
 implementation, and the `s3` provider is declared but deliberately throws rather

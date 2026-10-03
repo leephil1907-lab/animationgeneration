@@ -240,6 +240,6 @@ export default function Home() {
       {job.error&&<div className="errorBox">{job.error}</div>}
       {job.outputs.length>0?<div className="outputGrid">{job.outputs.map((o,i)=><article className="outputCard" key={`${o.filename}-${i}`}>{/\.(mp4|webm|mov|gif)$/i.test(o.filename)?<video src={o.url} controls playsInline/>:<img src={o.url} alt={o.filename}/>}<div><span>{o.filename}</span><a href={o.url} target="_blank" rel="noreferrer">Open output</a></div></article>)}</div>:job.status!=='error'&&<div className="empty small"><Loader2 className="spin"/><p>Waiting for ComfyUI to finish and expose the output file…</p></div>}</div>}
     </section>}
-    <footer><span>Animation Generation Studio</span><span>Characters · References · ComfyUI · Outputs · Agent Chat</span><span>v0.7</span></footer>
+    <footer><span>MOTIONA Studio</span><span>Characters · References · ComfyUI · Outputs · Agent Chat</span><span>v0.7</span></footer>
   </main>
 }

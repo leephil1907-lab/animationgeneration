@@ -21,7 +21,8 @@ import AccountChip from '@/components/AccountChip';
 import { downloadAll, downloadOutput } from '@/lib/download';
 import type { JobOutput } from '@/lib/jobs';
 import {
-  CAMERA_MOVES, boardIsComplete, dimensionsFor, formatRuntime, framesFor, loadBoards,
+  CAMERA_MOVES, boardIsComplete, dimensionsFor, fetchServerBoards, formatRuntime, framesFor, loadBoards,
+  mergeBoards,
   newShot, newStoryboard, randomSeed, saveBoard, shotProgress, totalRuntime,
   type Shot, type Storyboard,
 } from '@/lib/storyboard';
@@ -83,6 +84,14 @@ export default function StoryboardPage() {
   useEffect(() => {
     const local = loadBoards();
     const restored = local[0] || newStoryboard('MOTIONA sequence');
+    // If this browser holds nothing, adopt the newest board the storage adapter
+    // has for this device so a cleared browser still opens onto real work.
+    if (local.length === 0) {
+      void fetchServerBoards().then((serverBoards) => {
+        if (serverBoards.length === 0) return;
+        setBoard(mergeBoards([], serverBoards)[0]);
+      });
+    }
     // Attribute new boards to the signed-in local account, when there is one.
     if (!restored.owner) {
       try {
