@@ -9,9 +9,9 @@ type ChatMessage={role:'user'|'assistant';content:string};
 type SavedConversation={id:string;characterId:string;title:string;messages:ChatMessage[];updatedAt:string};
 
 const characters:Character[]=[
-  {id:'aiko-ren',name:'Aiko Ren',tagline:'Cyberpunk wanderer',style:'Neon noir',initials:'AR',accent:'#8b5cf6'},
-  {id:'mara-vale',name:'Mara Vale',tagline:'Cinematic detective',style:'Neo-noir',initials:'MV',accent:'#e879f9'},
-  {id:'nova-9',name:'Nova 9',tagline:'Synthetic performer',style:'Futurist',initials:'N9',accent:'#67e8f9'},
+  {id:'aiko-ren',name:'Aiko Ren',tagline:'Cyberpunk wanderer',style:'Neon noir',initials:'AR',accent:'#ff4fa3'},
+  {id:'mara-vale',name:'Mara Vale',tagline:'Cinematic detective',style:'Neo-noir',initials:'MV',accent:'#9b7cff'},
+  {id:'nova-9',name:'Nova 9',tagline:'Synthetic performer',style:'Futurist',initials:'N9',accent:'#63e6ff'},
 ];
 const starters=['Help me design her next scene','Create a cinematic portrait concept','Build a 30-second video sequence','Give me three outfit directions'];
 const STORAGE='motiona-conversations';
@@ -91,6 +91,7 @@ export default function ConversationHome(){
   }
 
   return <main className="conversationApp">
+    <div className="motionaAtmosphere" aria-hidden="true"><span/><span/><span/></div>
     <aside className="conversationSidebar">
       <nav className="mobilePrimaryNav" aria-label="Primary"><Link href="/">Discover</Link><Link href="/studio">Create</Link><Link href="/animate">Animate</Link><Link href="/gallery">Library</Link></nav>
       <div className="conversationBrand"><Link href="/"><span className="conversationMark">M</span><b>MOTION<span>A</span></b></Link><span className="conversationAge">18+</span></div>
@@ -129,5 +130,14 @@ export default function ConversationHome(){
       <div className="quickCreate"><span>QUICK CREATE</span><Link href="/studio?view=generate"><ImageIcon size={15}/><b>Image</b><small>Portrait or scene</small><ArrowUpRight size={14}/></Link><Link href="/animate"><Video size={15}/><b>Video</b><small>Flexible duration</small><ArrowUpRight size={14}/></Link><Link href="/storyboard"><Clapperboard size={15}/><b>Storyboard</b><small>Build the sequence</small><ArrowUpRight size={14}/></Link></div>
       <div className="creationNote"><Sparkles size={15}/><div><b>One character, many worlds.</b><p>Your character identity can travel from conversation to image, storyboard and animation without exposing the render engine.</p></div></div>
     </aside>
+    <section className="motionaFlow" aria-label="MOTIONA creative workflow">
+      <div><span>01</span><b>CONVERSE</b><small>Shape the idea with your character.</small></div>
+      <i/>
+      <div><span>02</span><b>CREATE</b><small>Turn the conversation into a visual.</small></div>
+      <i/>
+      <div><span>03</span><b>DIRECT</b><small>Build shots, motion and continuity.</small></div>
+      <i/>
+      <div><span>04</span><b>RENDER</b><small>Send the finished direction to your engine.</small></div>
+    </section>
   </main>;
 }
