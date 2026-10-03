@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { resolveJobState } from '@/lib/comfy/client';
 import { listRecords, readRecord, writeRecord } from '@/lib/storage';
 import { isTerminal, type MotionaJob } from '@/lib/jobs';
+import { requireSameOrigin } from '@/lib/api-security';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,8 @@ const MAX_POLLS_BEFORE_GIVEUP = Number(process.env.MOTIONA_MAX_POLLS || 240);
  * updated the stored job, which is why gallery outputs stayed empty.
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ promptId: string }> }) {
+  const denied = requireSameOrigin(_req);
+  if (denied) return denied;
   const { promptId } = await params;
 
   if (!promptId || !promptId.trim()) {
