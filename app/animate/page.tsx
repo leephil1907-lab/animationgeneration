@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Download, Loader2, Play, Upload, Video } from 'lucide-react';
 import OutputPreview from '@/components/OutputPreview';
 import DevWorkerNotice from '@/components/DevWorkerNotice';
+import ComfyEndpointStatus from '@/components/ComfyEndpointStatus';
 import AccountChip from '@/components/AccountChip';
 import { downloadOutput } from '@/lib/download';
 import { createJob, isTerminal, reconcileJob, type JobOutput, type MotionaJob } from '@/lib/jobs';
@@ -187,6 +188,7 @@ export default function AnimatePage() {
           </p>
         </div>
 
+        <ComfyEndpointStatus />
         <DevWorkerNotice />
 
         <div className="workerGrid">
