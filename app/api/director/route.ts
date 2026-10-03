@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { moderatePrompt } from '@/lib/prompt-safety';
 import { requireSameOrigin, validateContentLength } from '@/lib/api-security';
+import { requireServerUser } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 
@@ -45,7 +46,7 @@ function fallbackPlan(prompt: string, character?: string): DirectorPlan {
 async function openAiPlan(prompt: string, character?: string): Promise<DirectorPlan | null> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return null;
-  const model = process.env.OPENAI_DIRECTOR_MODEL || 'gpt-6-luna';
+  const model = process.env.OPENAI_DIRECTOR_MODEL || 'gpt-5';
   const instruction = `You are MOTIONA Director. Turn a user's animation idea into a practical 4-8 shot storyboard. Return ONLY valid JSON with keys title, logline, visualDirection, shots, notes. Each shot must have id, duration (number seconds), scene, camera, action, dialogue, transition. Keep character continuity and make every shot renderable in an image/video generation workflow. No markdown.`;
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
   const denied = requireSameOrigin(request) || validateContentLength(request, 128 * 1024);
   if (denied) return denied;
   try {
+    await requireServerUser();
     const body = await request.json();
     const prompt = typeof body?.prompt === 'string' ? body.prompt.trim().slice(0, 8000) : '';
     const character = typeof body?.character === 'string' ? body.character.trim().slice(0, 2000) : '';
