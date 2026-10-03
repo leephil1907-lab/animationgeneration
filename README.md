@@ -1,16 +1,14 @@
 # MOTIONA
 
-AI character conversation, image, storyboard, and animation workspace powered by ComfyUI.
+AI character conversation and animation studio powered by ComfyUI.
 
-## Features
+## What it does
 
 - Character discovery and character-aware chat
-- Character profiles, references, voice notes and TTS
-- Image, storyboard and video workflows
-- ComfyUI integration with real job status and outputs
-- Private gallery and local-first storage
-- PWA-ready MOTIONA interface
-- Server-side prompt safety and consent-aware workflows
+- Image, storyboard and video creation
+- Voice notes and TTS
+- ComfyUI rendering and job tracking
+- Private gallery and PWA-ready interface
 
 ## Quick start
 
@@ -20,7 +18,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Set `COMFYUI_URL` in `.env.local` to a reachable ComfyUI instance.
+Set `COMFYUI_URL` to your reachable ComfyUI instance.
 
 ## Commands
 
@@ -34,29 +32,11 @@ npm run test:e2e
 ## Architecture
 
 ```
-MOTIONA → API → ComfyUI → render jobs → Gallery
+MOTIONA → API → ComfyUI → Render → Gallery
 ```
 
-MOTIONA is the creative control surface; **ComfyUI performs the actual inference**. No fake generation backend is shipped with the product.
+MOTIONA is the creative interface; **ComfyUI handles inference and rendering**.
 
-## Environment
+See `.env.example` for configuration. Animation requires the required workflows and models on the connected ComfyUI instance.
 
-Key variables:
-
-```env
-COMFYUI_URL=http://127.0.0.1:8188
-COMFYUI_CHECKPOINT=
-COMFYUI_VIDEO_CHECKPOINT=
-OPENAI_API_KEY=
-ELEVENLABS_API_KEY=
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-```
-
-See `.env.example` for the full configuration.
-
-## Notes
-
-- Animation requires the workflows and models installed on the connected ComfyUI instance.
-- Local development can use the test worker in `dev/mock-comfyui/`.
-- The current account/storage layer is local-first and is not a production authentication or cloud-storage system.
-- Do not upload real people's faces without consent.
+**Safety:** use real-person references only with consent.
