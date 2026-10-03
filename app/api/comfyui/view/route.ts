@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { safeComfyFilename } from '@/lib/api-security';
 
 export async function GET(request:NextRequest) {
   const base=(process.env.COMFYUI_URL||'http://127.0.0.1:8188').replace(/\/$/,'');
   const p=request.nextUrl.searchParams;
-  const filename=p.get('filename'); if(!filename) return NextResponse.json({error:'filename is required'},{status:400});
-  const qs=new URLSearchParams({filename,subfolder:p.get('subfolder')||'',type:p.get('type')||'output'});
+  const filename=p.get('filename') || '';
+  if(!safeComfyFilename(filename)) return NextResponse.json({error:'Invalid output filename'},{status:400});
+  const subfolder=p.get('subfolder') || '';
+  if(subfolder.length > 240 || subfolder.includes('..') || subfolder.includes('\\')) return NextResponse.json({error:'Invalid output subfolder'},{status:400});
+  const type=p.get('type')||'output';
+  if(!['output','input','temp'].includes(type)) return NextResponse.json({error:'Invalid output type'},{status:400});
+  const qs=new URLSearchParams({filename,subfolder,type});
   try {
     const r=await fetch(`${base}/view?${qs.toString()}`,{cache:'no-store'});
     if(!r.ok) return NextResponse.json({error:'ComfyUI output unavailable'},{status:r.status});
