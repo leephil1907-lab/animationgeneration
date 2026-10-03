@@ -4,14 +4,19 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, Clapperboard, Film, Image as ImageIcon, Mic, MoreHorizontal, Plus, Search, Send, Sparkles, Video, Wand2, Square } from 'lucide-react';
 
-type Character={id:string;name:string;tagline:string;style:string;initials:string;accent:string};
+type Character={id:string;name:string;tagline:string;style:string;initials:string;accent:string;visual:string;signal:string;};
+function CharacterVisual({character,className=''}:{character:Character;className?:string}){
+  return <span className={`characterVisual ${className}`} style={{'--accent':character.accent,'--signal':character.signal} as React.CSSProperties} aria-hidden="true">
+    <span className="portraitGlow"/><span className="portraitHalo"/><span className="portraitHead"/><span className="portraitFace"/><span className="portraitShoulder"/><span className="portraitScan"/><span className="portraitLabel">{character.visual}</span>
+  </span>;
+}
 type ChatMessage={role:'user'|'assistant';content:string};
 type SavedConversation={id:string;characterId:string;title:string;messages:ChatMessage[];updatedAt:string};
 
 const characters:Character[]=[
-  {id:'aiko-ren',name:'Aiko Ren',tagline:'Cyberpunk wanderer',style:'Neon noir',initials:'AR',accent:'#ff4fa3'},
-  {id:'mara-vale',name:'Mara Vale',tagline:'Cinematic detective',style:'Neo-noir',initials:'MV',accent:'#9b7cff'},
-  {id:'nova-9',name:'Nova 9',tagline:'Synthetic performer',style:'Futurist',initials:'N9',accent:'#63e6ff'},
+  {id:'aiko-ren',name:'Aiko Ren',tagline:'Cyberpunk wanderer',style:'Neon noir',initials:'AR',accent:'#ff4fa3',signal:'#63e6ff',visual:'NEON / NIGHT'},
+  {id:'mara-vale',name:'Mara Vale',tagline:'Cinematic detective',style:'Neo-noir',initials:'MV',accent:'#9b7cff',signal:'#ffd1e8',visual:'NOIR / RAIN'},
+  {id:'nova-9',name:'Nova 9',tagline:'Synthetic performer',style:'Futurist',initials:'N9',accent:'#63e6ff',signal:'#ff4fa3',visual:'SYNTH / LIGHT'},
 ];
 const starters=['Help me design her next scene','Create a cinematic portrait concept','Build a 30-second video sequence','Give me three outfit directions'];
 const STORAGE='motiona-conversations';
@@ -97,18 +102,18 @@ export default function ConversationHome(){
       <div className="conversationBrand"><Link href="/"><span className="conversationMark">M</span><b>MOTION<span>A</span></b></Link><span className="conversationAge">18+</span></div>
       <button className="conversationNew" onClick={newConversation}><Plus size={15}/> New conversation</button>
       <div className="conversationSideLabel">CHARACTERS</div>
-      <div className="characterList">{characters.map(c=><button key={c.id} className={c.id===selected.id?'characterItem active':'characterItem'} onClick={()=>switchCharacter(c)}><span className="characterAvatar" style={{'--accent':c.accent} as React.CSSProperties}>{c.initials}</span><span><b>{c.name}</b><small>{c.tagline}</small></span></button>)}</div>
+      <div className="characterList">{characters.map(c=><button key={c.id} className={c.id===selected.id?'characterItem active':'characterItem'} onClick={()=>switchCharacter(c)}><CharacterVisual character={c} className="sidebarPortrait"/><span><b>{c.name}</b><small>{c.tagline}</small></span></button>)}</div>
       <div className="conversationSideLabel recentLabel">RECENT</div>
       <div className="conversationHistory">{history.slice(0,7).map(c=><button key={c.id} onClick={()=>loadConversation(c)}><b>{c.title}</b><small>{characters.find(x=>x.id===c.characterId)?.name||'Character'}</small></button>)}</div>
       <div className="conversationSideLinks"><Link href="/"><Sparkles size={14}/> Discover</Link><Link href="/studio"><Wand2 size={14}/> Studio</Link><Link href="/storyboard"><Clapperboard size={14}/> Storyboard</Link><Link href="/gallery"><Film size={14}/> My creations</Link><Link href="/animate"><Video size={14}/> Video engine</Link></div>
     </aside>
 
     <section className="conversationMain">
-      <header className="conversationTop"><div className="conversationCharacter"><span className="characterAvatar large" style={{'--accent':selected.accent} as React.CSSProperties}>{selected.initials}</span><div><b>{selected.name}</b><span>{selected.tagline} · {selected.style}</span></div><i className="onlineDot"/></div><div className="conversationTopActions"><button aria-label="Search"><Search size={17}/></button><Link href="/studio?view=generate"><Sparkles size={16}/> Create</Link><button aria-label="More"><MoreHorizontal size={18}/></button></div></header>
+      <header className="conversationTop"><div className="conversationCharacter"><CharacterVisual character={selected} className="topPortrait"/><div><b>{selected.name}</b><span>{selected.tagline} · {selected.style}</span></div><i className="onlineDot"/></div><div className="conversationTopActions"><button aria-label="Search"><Search size={17}/></button><Link href="/studio?view=generate"><Sparkles size={16}/> Create</Link><button aria-label="More"><MoreHorizontal size={18}/></button></div></header>
 
       <div className="conversationBody">
         <div className="conversationMessages">
-          {messages.length===0?<div className="conversationWelcome"><span className="welcomeOrb" style={{'--accent':selected.accent} as React.CSSProperties}>{selected.initials}</span><span className="welcomeEyebrow">MOTIONA CHARACTER</span><h1>Talk to {selected.name}.</h1><p>{greeting}</p><div className="starterGrid">{starters.map(s=><button key={s} onClick={()=>send(s)}>{s}<ArrowUpRight size={13}/></button>)}</div></div>:<>
+          {messages.length===0?<div className="conversationWelcome"><CharacterVisual character={selected} className="welcomePortrait"/><span className="welcomeEyebrow">MOTIONA CHARACTER</span><h1>Talk to {selected.name}.</h1><p>{greeting}</p><div className="starterGrid">{starters.map(s=><button key={s} onClick={()=>send(s)}>{s}<ArrowUpRight size={13}/></button>)}</div></div>:<>
             <div className="conversationIntro"><span>{selected.name}</span><small>Private conversation · saved locally</small></div>
             {messages.map((m,i)=><div key={i} className={m.role==='user'?'bubbleRow user':'bubbleRow'}><div className={m.role==='assistant'?'chatAvatar':'userAvatar'}>{m.role==='assistant'?selected.initials:'You'}</div><div className="bubble"><p>{m.content}</p></div></div>)}
             {busy&&<div className="bubbleRow"><div className="chatAvatar">{selected.initials}</div><div className="bubble typing"><i/><i/><i/></div></div>}
@@ -130,6 +135,14 @@ export default function ConversationHome(){
       <div className="quickCreate"><span>QUICK CREATE</span><Link href="/studio?view=generate"><ImageIcon size={15}/><b>Image</b><small>Portrait or scene</small><ArrowUpRight size={14}/></Link><Link href="/animate"><Video size={15}/><b>Video</b><small>Flexible duration</small><ArrowUpRight size={14}/></Link><Link href="/storyboard"><Clapperboard size={15}/><b>Storyboard</b><small>Build the sequence</small><ArrowUpRight size={14}/></Link></div>
       <div className="creationNote"><Sparkles size={15}/><div><b>One character, many worlds.</b><p>Your character identity can travel from conversation to image, storyboard and animation without exposing the render engine.</p></div></div>
     </aside>
+    <section className="characterDiscovery" aria-label="Character discovery">
+      <div className="discoveryHeader"><div><span className="discoveryEyebrow">CHARACTER DISCOVERY</span><h2>Meet the characters behind the worlds.</h2><p>Browse MOTIONA originals by visual identity, then start a conversation without leaving the creative environment.</p></div><Link href="/studio">Open Character Lab <ArrowUpRight size={14}/></Link></div>
+      <div className="discoveryRail">{characters.map((c,i)=><button key={c.id} className={c.id===selected.id?'discoveryCard active':'discoveryCard'} onClick={()=>switchCharacter(c)}>
+        <CharacterVisual character={c} className="discoveryPortrait"/><span className="discoveryIndex">0{i+1}</span>
+        <span className="discoveryMeta"><b>{c.name}</b><small>{c.tagline}</small><em>{c.style}</em></span>
+        <span className="discoveryAction">{c.id===selected.id?'IN CONVERSATION':'TALK TO '+c.name.toUpperCase()} <ArrowUpRight size={13}/></span>
+      </button>)}</div>
+    </section>
     <section className="motionaFlow" aria-label="MOTIONA creative workflow">
       <div><span>01</span><b>CONVERSE</b><small>Shape the idea with your character.</small></div>
       <i/>
