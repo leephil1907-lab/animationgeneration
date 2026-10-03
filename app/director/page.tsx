@@ -35,7 +35,8 @@ export default function DirectorPage(){
       const r=await fetch('/api/director/storyboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan,characterName:character})});
       const data=await r.json();
       if(!r.ok)throw new Error(data.error||'Could not create storyboard');
-      localStorage.setItem('motiona-storyboards', JSON.stringify([data.storyboard]));
+      const existing=JSON.parse(localStorage.getItem('motiona-storyboards')||'[]');
+      localStorage.setItem('motiona-storyboards', JSON.stringify([data.storyboard, ...(Array.isArray(existing)?existing.filter((entry:any)=>entry?.id!==data.storyboard.id):[])].slice(0,25)));
       router.push(`/storyboard?id=${encodeURIComponent(data.storyboard.id)}`);
     }catch(e){setError(e instanceof Error?e.message:'Could not create storyboard');}
     finally{setBusy(false);}
