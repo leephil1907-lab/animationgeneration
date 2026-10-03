@@ -1,0 +1,1 @@
+export default function Loading(){return <main className="motionaLoading" aria-label="Loading MOTIONA"><div className="motionaLoadingMark">M</div><div className="motionaLoadingLine"><i/></div><span>LOADING MOTIONA</span></main>}
