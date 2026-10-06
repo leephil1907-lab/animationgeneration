@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, Clapperboard, Film, Image as ImageIcon, Mic, MoreHorizontal, Plus, Search, Send, Sparkles, Video, Wand2, Square } from 'lucide-react';
 import characterStyles from './CharacterDiscovery.module.css';
+import { saveCreationDraft, type CreationMode } from '@/lib/creative-draft';
 
 type Character={id:string;name:string;tagline:string;style:string;initials:string;accent:string;visual:string;signal:string;};
 function CharacterVisual({character,className=''}:{character:Character;className?:string}){
@@ -58,6 +59,15 @@ export default function ConversationHome(){
     setSelected(character);setMessages(c.messages);setConversationId(c.id);setInput('');setNotice('');
   }
 
+  function createFromConversation(mode:CreationMode){
+    saveCreationDraft({id:conversationId||crypto.randomUUID(),mode,characterId:selected.id,characterName:selected.name,prompt:messages.filter(m=>m.role==='user').slice(-1)[0]?.content||input||`Create something with ${selected.name}.`,messages,createdAt:new Date().toISOString()});
+    window.location.href='/create';
+  }
+
+  async function persistMemory(nextMessages:ChatMessage[]){
+    try{await fetch('/api/memory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({characterId:selected.id,characterName:selected.name,messages:nextMessages})});}catch{}
+  }
+
   async function send(raw=input){
     const text=raw.trim();
     if(!text||busy)return;
@@ -70,7 +80,9 @@ export default function ConversationHome(){
       const data=await r.json();
       if(!r.ok)throw new Error(data?.error||'Conversation failed.');
       const content=String(data.message?.content||data.reply||'').trim();
-      setMessages([...next,{role:'assistant',content}]);
+      const complete=[...next,{role:'assistant',content}];
+      setMessages(complete);
+      void persistMemory(complete);
     }catch(e){setNotice(e instanceof Error?e.message:'Conversation failed.');}
     finally{setBusy(false);}
   }
@@ -111,7 +123,7 @@ export default function ConversationHome(){
     </aside>
 
     <section className="conversationMain">
-      <header className="conversationTop"><div className="conversationCharacter"><CharacterVisual character={selected} className={characterStyles.visualTop}/><div><b>{selected.name}</b><span>{selected.tagline} · {selected.style}</span></div><i className="onlineDot"/></div><div className="conversationTopActions"><button aria-label="Search"><Search size={17}/></button><Link href="/studio?view=generate"><Sparkles size={16}/> Create</Link><button aria-label="More"><MoreHorizontal size={18}/></button></div></header>
+      <header className="conversationTop"><div className="conversationCharacter"><CharacterVisual character={selected} className={characterStyles.visualTop}/><div><b>{selected.name}</b><span>{selected.tagline} · {selected.style}</span></div><i className="onlineDot"/></div><div className="conversationTopActions"><button aria-label="Search"><Search size={17}/></button><button onClick={()=>createFromConversation("image")}><Sparkles size={16}/> Create</button><button aria-label="More"><MoreHorizontal size={18}/></button></div></header>
 
       <div className="conversationBody">
         <div className="conversationMessages">
@@ -123,7 +135,7 @@ export default function ConversationHome(){
         </div>
 
         <div className="conversationComposerWrap">
-          <div className="composerTools"><Link href="/studio?view=generate"><ImageIcon size={15}/> Image</Link><Link href="/animate"><Video size={15}/> Video</Link><Link href="/storyboard"><Clapperboard size={15}/> Scene</Link><span>Character-aware creation</span></div>
+          <div className="composerTools"><button onClick={()=>createFromConversation("image")}><ImageIcon size={15}/> Image</button><button onClick={()=>createFromConversation("video")}><Video size={15}/> Video</button><button onClick={()=>createFromConversation("scene")}><Clapperboard size={15}/> Scene</button><span>Character-aware creation</span></div>
           {notice&&<div className="conversationNotice">{notice}</div>}
           <div className="conversationComposer"><textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}}} placeholder={`Message ${selected.name}…`} rows={1}/><button className={recording?'mic recording':'mic'} onClick={toggleRecording} aria-label={recording?'Stop recording':'Voice note'}>{recording?<Square size={15}/>:<Mic size={17}/>}</button><button className="send" onClick={()=>send()} disabled={!input.trim()||busy} aria-label="Send"><Send size={16}/></button></div>
           <div className="composerFoot"><span>18+ fictional characters · consent-aware generation</span><Link href="/studio?view=generate">Open full creator <ArrowUpRight size={12}/></Link></div>
@@ -134,7 +146,7 @@ export default function ConversationHome(){
     <aside className="conversationInspector">
       <div className="inspectorTitle"><span>CREATE WITH {selected.name.toUpperCase()}</span><MoreHorizontal size={16}/></div>
       <div className="characterCard"><CharacterVisual character={selected} className={characterStyles.visualLarge}/><b>{selected.name}</b><small>{selected.tagline}</small><p>{selected.style} · identity-aware</p></div>
-      <div className="quickCreate"><span>QUICK CREATE</span><Link href="/studio?view=generate"><ImageIcon size={15}/><b>Image</b><small>Portrait or scene</small><ArrowUpRight size={14}/></Link><Link href="/animate"><Video size={15}/><b>Video</b><small>Flexible duration</small><ArrowUpRight size={14}/></Link><Link href="/storyboard"><Clapperboard size={15}/><b>Storyboard</b><small>Build the sequence</small><ArrowUpRight size={14}/></Link></div>
+      <div className="quickCreate"><span>QUICK CREATE</span><button onClick={()=>createFromConversation("image")}><ImageIcon size={15}/><b>Image</b><small>Portrait or scene</small><ArrowUpRight size={14}/></button><button onClick={()=>createFromConversation("video")}><Video size={15}/><b>Video</b><small>Flexible duration</small><ArrowUpRight size={14}/></button><button onClick={()=>createFromConversation("scene")}><Clapperboard size={15}/><b>Storyboard</b><small>Build the sequence</small><ArrowUpRight size={14}/></button></div>
       <div className="creationNote"><Sparkles size={15}/><div><b>One character, many worlds.</b><p>Your character identity can travel from conversation to image, storyboard and animation without exposing the render engine.</p></div></div>
     </aside>
     <section className="characterDiscovery" aria-label="Character discovery">
