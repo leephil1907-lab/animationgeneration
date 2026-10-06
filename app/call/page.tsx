@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Camera, CameraOff, Mic, MicOff, PhoneOff, Send, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { saveCreationDraft } from '@/lib/creative-draft';
 
 const character={name:'Aiko Ren',tagline:'Cyberpunk wanderer',accent:'#ff4fa3',signal:'#63e6ff'};
 
@@ -41,13 +42,18 @@ export default function CallPage(){
     if(videoRef.current)videoRef.current.srcObject=null;
     setConnected(false);
   }
+  function createFromCall(){
+    saveCreationDraft({id:crypto.randomUUID(),mode:'video',characterId:'aiko-ren',characterName:character.name,prompt:messages.filter(m=>m.role==='you').slice(-1)[0]?.text||`Create a cinematic sequence with ${character.name}.`,messages:messages.map(m=>({role:m.role==='you'?'user':'assistant',content:m.text})),createdAt:new Date().toISOString()});
+    window.location.href='/create';
+  }
   async function send(){
     const text=message.trim(); if(!text||busy)return;
     setMessage('');setMessages(m=>[...m,{role:'you',text}]);setBusy(true);
     try{
       const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversationId:crypto.randomUUID(),message:text,characterId:'aiko-ren',history:[...messages,{role:'user',content:text}].map(x=>({role:x.role==='you'?'user':'assistant',content:x.text}))})});
       const d=await r.json(); if(!r.ok)throw new Error(d?.error||'Conversation failed.');
-      setMessages(m=>[...m,{role:'aiko',text:String(d.message?.content||d.reply||'I’m here. Tell me what you want to create.') }]);
+      const reply=String(d.message?.content||d.reply||'I’m here. Tell me what you want to create.');
+      setMessages(m=>{const next=[...m,{role:'aiko' as const,text:reply}]; void fetch('/api/memory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({characterId:'aiko-ren',characterName:character.name,messages:next.map(x=>({role:x.role==='you'?'user':'assistant',content:x.text}))})}).catch(()=>{}); return next;});
     }catch(e){setNotice(e instanceof Error?e.message:'Conversation failed.');}
     finally{setBusy(false);}
   }
@@ -98,7 +104,7 @@ export default function CallPage(){
           <button className="endCall" onClick={endCall} aria-label="End session"><PhoneOff/></button>
         </div>
         {notice&&<p className="callNotice">{notice}</p>}
-        <Link href="/studio?view=generate" className="callCreate"><Sparkles size={14}/> Turn this conversation into a creation</Link>
+        <button onClick={createFromCall} className="callCreate"><Sparkles size={14}/> Turn this conversation into a creation</button>
       </div>
     </section>
   </main>;
