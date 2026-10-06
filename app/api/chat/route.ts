@@ -4,6 +4,7 @@ import type { Message, ToolCall } from '@/lib/types';
 import { moderatePrompt } from '@/lib/prompt-safety';
 import { requireSameOrigin, validateContentLength } from '@/lib/api-security';
 import { requireServerUser } from '@/lib/server-auth';
+import { readRecord } from '@/lib/storage';
 
 export const runtime='nodejs';
 
@@ -61,7 +62,9 @@ export async function POST(req:NextRequest){
       const last=toolCalls[toolCalls.length-1];last.result=result.result;last.status=result.status;
     }
 
-    const reply=await characterReply(character,history);
+    const memory=await readRecord<any>('character-memory',character.id).catch(()=>null);
+    const memoryHistory=Array.isArray(memory?.recentMessages)?memory.recentMessages.slice(-6):[];
+    const reply=await characterReply(character,[...memoryHistory,...history].slice(-16));
     const content=reply||(toolCalls.length
       ?'I ran '+(toolCalls.length>1?'the requested tools':'the requested tool')+': **'+toolCalls.map(t=>t.name).join(', ')+'**. See the tool result below.'
       :'Conversation AI is not configured on this deployment yet. Add OPENAI_API_KEY on the server to enable character conversations.');
