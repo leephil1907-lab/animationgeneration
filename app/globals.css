@@ -682,3 +682,36 @@ a:hover,button:hover{filter:brightness(1.08)}
 .callConsole{position:relative;z-index:2;width:min(1320px,calc(100% - 40px));margin:0 auto 24px;display:grid;grid-template-columns:1.5fr .7fr;gap:12px}.callTranscript,.callControls{border:1px solid rgba(255,255,255,.08);border-radius:15px;background:rgba(13,10,16,.84);backdrop-filter:blur(18px)}.callTranscript{min-height:210px;display:grid;grid-template-rows:auto 1fr auto}.transcriptTop{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;font-size:9px}.transcriptTop span{display:flex;gap:7px;align-items:center}.transcriptTop small{color:#66616b}.transcriptBody{padding:12px 15px;max-height:160px;overflow:auto}.callEmpty{display:grid;gap:5px;padding:12px 0}.callEmpty b{font-size:13px}.callEmpty span{font-size:9px;color:#77727c}.callMsg{margin-bottom:10px;max-width:80%}.callMsg.you{margin-left:auto;text-align:right}.callMsg b{font-size:8px;color:#ff4fa3}.callMsg p{font-size:10px;line-height:1.5;margin:3px 0;color:#d5d0d7}.callTyping{font-size:9px;color:#77727c}.callComposer{border-top:1px solid rgba(255,255,255,.06);padding:9px;display:flex;gap:7px}.callComposer input{flex:1;min-width:0;border:0;background:#100d13;color:#fff;border-radius:9px;padding:11px;font-size:10px;outline:none}.callComposer button{border:0;background:linear-gradient(135deg,#ff4fa3,#9b7cff);color:#08070b;border-radius:9px;width:38px}.callControls{padding:18px;display:grid;align-content:center;gap:18px}.controlHint{display:grid;gap:5px}.controlHint span{font-size:7px;letter-spacing:.18em;color:#ff4fa3}.controlHint b{font-size:15px}.controlHint small{font-size:9px;color:#77727c}.controlRow{display:flex;gap:8px}.controlRow button{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:#171219;color:#fff;display:grid;place-items:center}.controlRow .endCall{background:#4b1727;color:#ffd1e8}.callCreate{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px;border:1px solid rgba(255,79,163,.25);border-radius:9px;color:#ffd1e8;text-decoration:none;font-size:9px}.callNotice{font-size:9px;color:#d99aaa;line-height:1.4}
 @keyframes callPulse{0%,100%{transform:scale(.97);opacity:.65}50%{transform:scale(1.04);opacity:1}}@keyframes callScan{0%,100%{transform:translateY(-90px);opacity:0}45%,65%{transform:translateY(90px);opacity:.9}}
 @media(max-width:850px){.callHeader{grid-template-columns:1fr auto;padding:0 14px}.callHeader>div{display:none}.callStage{grid-template-columns:1fr;margin:14px auto}.callVisualPane,.userCallPane{min-height:330px}.callVisualPane{order:0}.userCallPane{order:1}.callConsole{grid-template-columns:1fr;margin-bottom:14px}.callControls{min-height:170px}.callStage,.callConsole{width:min(100% - 28px,1320px)}}
+
+
+/* MOTIONA conversation → creation bridge */
+.creationBridge{min-height:100vh;background:#08070b;color:#f7f4f8;padding:24px clamp(18px,4vw,64px);font-family:inherit}
+.bridgeHeader{height:56px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.09)}
+.bridgeHeader a,.bridgeBack{display:inline-flex;align-items:center;gap:8px;color:#bcb6c3;text-decoration:none;font-size:13px}
+.bridgeHeader div{display:flex;flex-direction:column;align-items:center;gap:2px}
+.bridgeHeader span,.bridgeEyebrow{font-size:10px;letter-spacing:.18em;color:#ff8bc2}
+.bridgeHeader b{font-size:15px;letter-spacing:.12em}
+.bridgeGrid{max-width:1180px;margin:70px auto;display:grid;grid-template-columns:1.05fr .95fr;gap:80px}
+.bridgeContext h1{font-size:clamp(42px,6vw,82px);line-height:.92;margin:12px 0 28px;letter-spacing:-.05em}
+.bridgePrompt{font-size:20px;line-height:1.5;color:#e5dfe7;max-width:650px}
+.bridgeMessages{margin-top:36px;display:grid;gap:10px;max-height:360px;overflow:auto}
+.bridgeMessage{padding:14px 16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025);border-radius:14px}
+.bridgeMessage.user{border-color:rgba(255,79,163,.22);background:rgba(255,79,163,.05)}
+.bridgeMessage b{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#ff8bc2}
+.bridgeMessage p{margin:6px 0 0;color:#c8c1cc;line-height:1.5}
+.bridgeActions{display:flex;flex-direction:column;gap:12px}
+.bridgeActions h2{font-size:32px;letter-spacing:-.03em;margin:0 0 14px}
+.bridgeAction{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding:20px;border:1px solid rgba(255,255,255,.1);border-radius:18px;color:#f8f5f9;text-decoration:none;background:rgba(255,255,255,.025);transition:.2s ease}
+.bridgeAction:hover,.bridgeAction.active{border-color:rgba(255,79,163,.5);background:rgba(255,79,163,.07);transform:translateY(-2px)}
+.bridgeAction svg{width:20px}.bridgeAction span{display:grid;gap:5px}.bridgeAction small{color:#9f98a4;line-height:1.4}
+.bridgeState{display:flex;gap:12px;align-items:center;margin-top:12px;padding:15px;border-top:1px solid rgba(255,255,255,.08);color:#a9a2ad}
+.bridgeState svg{color:#ff4fa3}.bridgeState div{display:grid;gap:3px}.bridgeState b{font-size:12px;color:#eee9ef}.bridgeState span{font-size:11px}
+.bridgeEmpty{max-width:720px;margin:18vh auto;text-align:center;display:grid;justify-items:center;gap:14px}.bridgeEmpty svg{color:#ff4fa3}.bridgeEmpty span{font-size:10px;letter-spacing:.18em;color:#ff8bc2}.bridgeEmpty h1{font-size:clamp(40px,6vw,76px);margin:0;letter-spacing:-.05em}.bridgeEmpty p{color:#a9a2ad;line-height:1.6;max-width:600px}.bridgeEmpty a{display:inline-flex;align-items:center;gap:7px;padding:12px 16px;border-radius:999px;background:#ff4fa3;color:#120b10;text-decoration:none;font-weight:700}
+
+.conversationTopActions button,.composerTools button,.quickCreate button{font:inherit}
+.composerTools button,.quickCreate button{border:0;background:none;color:inherit;cursor:pointer}
+.quickCreate button{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;text-align:left;padding:13px 0}
+.composerTools button{display:inline-flex;align-items:center;gap:6px;padding:0}
+.callCreate{border:0;cursor:pointer;font:inherit}
+
+@media(max-width:900px){.bridgeGrid{grid-template-columns:1fr;gap:48px;margin:48px auto}.bridgeGrid h1{font-size:54px}.bridgeHeader a:last-child{display:none}}
