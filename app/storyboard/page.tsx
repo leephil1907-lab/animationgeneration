@@ -19,6 +19,7 @@ import OutputPreview from '@/components/OutputPreview';
 import DevWorkerNotice from '@/components/DevWorkerNotice';
 import AccountChip from '@/components/AccountChip';
 import { downloadAll, downloadOutput } from '@/lib/download';
+import { clearCreationDraft, loadCreationDraft } from '@/lib/creative-draft';
 import type { JobOutput } from '@/lib/jobs';
 import {
   CAMERA_MOVES, boardIsComplete, dimensionsFor, fetchServerBoards, formatRuntime, framesFor, loadBoards,
@@ -83,6 +84,7 @@ export default function StoryboardPage() {
 
   useEffect(() => {
     const local = loadBoards();
+    const draft = loadCreationDraft();
     const requestedId = new URLSearchParams(window.location.search).get('id');
     if (requestedId) {
       void fetchServerBoards().then((serverBoards) => {
@@ -94,6 +96,20 @@ export default function StoryboardPage() {
       return;
     }
     const restored = local[0] || newStoryboard('MOTIONA sequence');
+    if (draft) {
+      const next = {
+        ...restored,
+        title: draft.prompt ? `MOTIONA — ${draft.characterName}` : restored.title,
+        characterName: draft.characterName,
+        characterTraits: draft.prompt,
+        characterStyle: 'Cinematic MOTIONA direction',
+        shots: restored.shots.length ? restored.shots.map((shot,index) => index === 0 ? { ...shot, scene: draft.prompt.slice(0,80) || shot.scene, prompt: draft.prompt } : shot) : [newShot(1)],
+      };
+      setBoard(next);
+      clearCreationDraft();
+      setHydrated(true);
+      return;
+    }
     if (local.length === 0) {
       void fetchServerBoards().then((serverBoards) => {
         if (serverBoards.length > 0) setBoard(mergeBoards([], serverBoards)[0]);
