@@ -16,6 +16,7 @@ import OutputPreview from '@/components/OutputPreview';
 import DevWorkerNotice from '@/components/DevWorkerNotice';
 import ComfyEndpointStatus from '@/components/ComfyEndpointStatus';
 import AccountChip from '@/components/AccountChip';
+import CloudGenerationPanel from '@/components/CloudGenerationPanel';
 import { downloadOutput } from '@/lib/download';
 import { createJob, isTerminal, reconcileJob, type JobOutput, type MotionaJob } from '@/lib/jobs';
 
@@ -203,6 +204,7 @@ export default function AnimatePage() {
           </p>
         </div>
 
+        <CloudGenerationPanel />
         <ComfyEndpointStatus />
         <DevWorkerNotice />
 
