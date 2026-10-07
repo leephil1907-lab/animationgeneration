@@ -20,7 +20,7 @@ export default function CloudGenerationPanel() {
     try {
       const endpoint = mode === 'image' ? '/api/generate/image' : '/api/generate/video';
       const body = mode === 'image'
-        ? { prompt, model: 'spicy-image-1', style: 'cinematic', width: 768, height: 1024, count: 1 }
+        ? { prompt, model: 'spicy-image-1', style: 'studio', width: 1024, height: 1536, count: 1 }
         : { prompt, model, duration, aspectRatio: aspect, resolution, fps: 30 };
       const r = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
       const data = await r.json();
@@ -63,7 +63,7 @@ export default function CloudGenerationPanel() {
     <textarea className="enginePrompt" value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder={mode==='video'?'Describe the scene, movement, camera and atmosphere…':'Describe the image, subject, composition and visual style…'} />
     {mode==='video' && <div className="engineControls">
       <label>Model<select value={model} onChange={e=>setModel(e.target.value)}><option value="spicy-motion-3">Motion 3</option><option value="spicy-motion-3-fast">Motion 3 Fast</option><option value="spicy-cinema-1">Cinema 1</option></select></label>
-      <label>Duration<select value={duration} onChange={e=>setDuration(Number(e.target.value))}>{[5,10,15,20,30].map(v=><option key={v}>{v}s</option>)}</select></label>
+      <label>Duration<select value={duration} onChange={e=>setDuration(Number(e.target.value))}>{[5,10,15,20,30].map(v=><option key={v} value={v}>{v}s</option>)}</select></label>
       <label>Format<select value={aspect} onChange={e=>setAspect(e.target.value)}><option>9:16</option><option>16:9</option><option>1:1</option><option>21:9</option></select></label>
       <label>Quality<select value={resolution} onChange={e=>setResolution(e.target.value)}><option>720P</option><option>1080P</option></select></label>
     </div>}
