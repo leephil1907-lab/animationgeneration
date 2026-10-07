@@ -62,8 +62,8 @@ export default function CloudGenerationPanel() {
     </div>
     <textarea className="enginePrompt" value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder={mode==='video'?'Describe the scene, movement, camera and atmosphere…':'Describe the image, subject, composition and visual style…'} />
     {mode==='video' && <div className="engineControls">
-      <label>Model<select value={model} onChange={e=>setModel(e.target.value)}><option value="spicy-motion-3">Motion 3</option><option value="spicy-motion-3-fast">Motion 3 Fast</option><option value="spicy-cinema-1">Cinema 1</option></select></label>
-      <label>Duration<select value={duration} onChange={e=>setDuration(Number(e.target.value))}>{[5,10,15,20,30].map(v=><option key={v} value={v}>{v}s</option>)}</select></label>
+      <label>Model<select value={model} onChange={e=>{const next=e.target.value;setModel(next);if(next.startsWith("spicy-cinema-1") && duration>15)setDuration(15)}}><option value="spicy-motion-3">Motion 3</option><option value="spicy-motion-3-fast">Motion 3 Fast</option><option value="spicy-cinema-1">Cinema 1</option></select></label>
+      <label>Duration<select value={duration} onChange={e=>setDuration(Number(e.target.value))}>{(model==="spicy-cinema-1"?[5,10,15]:[5,10,15,20,30]).map(v=><option key={v} value={v}>{v}s</option>)}</select></label>
       <label>Format<select value={aspect} onChange={e=>setAspect(e.target.value)}><option>9:16</option><option>16:9</option><option>1:1</option><option>21:9</option></select></label>
       <label>Quality<select value={resolution} onChange={e=>setResolution(e.target.value)}><option>720P</option><option>1080P</option></select></label>
     </div>}
