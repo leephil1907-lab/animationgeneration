@@ -20,7 +20,6 @@ import CloudGenerationPanel from '@/components/CloudGenerationPanel';
 import { downloadOutput } from '@/lib/download';
 import { createJob, isTerminal, reconcileJob, type JobOutput, type MotionaJob } from '@/lib/jobs';
 import { clearCreationDraft, loadCreationDraft } from '@/lib/creative-draft';
-import { clearCreationDraft, loadCreationDraft } from '@/lib/creative-draft';
 
 const WORKERS = ['ComfyUI / Wan2.1', 'ComfyUI / AnimateDiff'];
 const POLL_MS = 3000;
@@ -50,20 +49,13 @@ export default function AnimatePage() {
   jobRef.current = job;
   useEffect(() => {
     const draft = loadCreationDraft();
-    if (!draft) return;
+    if (!draft || draft.mode !== 'video') return;
     if (draft.prompt) setPrompt(draft.prompt);
     setStatus(`Conversation context loaded · ${draft.characterName}`);
     clearCreationDraft();
   }, []);
 
   /* -------------------------------------------------------- poll to finish */
-
-  useEffect(() => {
-    const draft=loadCreationDraft();
-    if(!draft || draft.mode!=='video') return;
-    if(draft.prompt) setPrompt(draft.prompt);
-    clearCreationDraft();
-  }, []);
 
   useEffect(() => {
     const current = jobRef.current;
