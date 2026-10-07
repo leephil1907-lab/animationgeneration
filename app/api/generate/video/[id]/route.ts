@@ -14,7 +14,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const user = await requireServerUser();
     const { id } = await params;
     const stored: any = await readRecord('generation-tasks', id);
-    if (stored && stored.owner !== user.id) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+    if (!stored || stored.owner !== user.id) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
     const task = await getVideoTask(id);
     await writeRecord('generation-tasks', id, { ...(stored || {}), ...task, owner: user.id, updatedAt: new Date().toISOString() });
     return NextResponse.json(task);
