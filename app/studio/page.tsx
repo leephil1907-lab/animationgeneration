@@ -7,6 +7,7 @@ import AccountChip from '@/components/AccountChip';
 import SceneShotWorkspace from '@/components/SceneShotWorkspace';
 import ChatPanel from '@/components/ChatPanel';
 import { buildCharacterProfile, type CharacterProfile } from '@/lib/character-profile';
+import { clearCreationDraft, loadCreationDraft } from '@/lib/creative-draft';
 
 type Character = { id:string; name:string; role:string; style:string; age:string; traits:string; notes:string; image:string|null; voice?:string; faceConsent?:boolean; created:string; profile?:CharacterProfile };
 type Output = { filename:string; subfolder:string; type:string; url:string };
@@ -41,6 +42,14 @@ export default function Home() {
   const countLabel=useMemo(()=>`${characters.length} character${characters.length===1?'':'s'}`,[characters.length]);
 
   useEffect(()=>{ setActive(initialView); },[initialView]);
+  useEffect(()=>{
+    if(initialView!=='generate') return;
+    const draft=loadCreationDraft();
+    if(!draft) return;
+    if(draft.prompt) setPrompt(draft.prompt);
+    if(draft.characterName && !form.name) setForm(s=>({...s,name:draft.characterName}));
+    clearCreationDraft();
+  },[initialView]);
   useEffect(()=>{ try { const saved=localStorage.getItem('ags-characters'); if(saved) setCharacters(JSON.parse(saved)); } catch {} checkComfy(); loadModels(); },[]);
   useEffect(()=>{ try { localStorage.setItem('ags-characters',JSON.stringify(characters)); } catch {} },[characters]);
 
