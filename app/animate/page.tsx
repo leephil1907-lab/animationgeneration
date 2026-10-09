@@ -212,7 +212,7 @@ export default function AnimatePage() {
           </p>
         </div>
 
-        <CloudGenerationPanel />
+        <CloudGenerationPanel initialPrompt={prompt} />
         <ComfyEndpointStatus />
         <DevWorkerNotice />
 
