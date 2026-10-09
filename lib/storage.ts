@@ -21,8 +21,18 @@ function hasSupabaseConfig(): boolean {
 }
 
 export function storageProvider(): StorageProvider {
-  if (process.env.STORAGE_PROVIDER === 'local-file') return 'local-file';
-  if (process.env.NODE_ENV === 'production' && hasSupabaseConfig()) return 'supabase';
+  // Deno Deploy instances are replaceable and their local filesystem is not a
+  // durable, shared database. Never silently store production user data on disk.
+  if (process.env.NODE_ENV === 'production') {
+    if (!hasSupabaseConfig()) {
+      throw new Error(
+        'Persistent storage is not configured. Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY in Deno Deploy before using saved projects or generation history.',
+      );
+    }
+    return 'supabase';
+  }
+
+  if (process.env.STORAGE_PROVIDER === 'supabase' && hasSupabaseConfig()) return 'supabase';
   return 'local-file';
 }
 
