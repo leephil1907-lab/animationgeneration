@@ -12,7 +12,9 @@ export default function CloudGenerationPanel({ initialPrompt = '' }: { initialPr
   const [model, setModel] = useState('spicy-motion-3');
   const [status, setStatus] = useState('Ready');
   const [output, setOutput] = useState<string|null>(null);
-  const [working, setWorking] = useState(false);\n\n  useEffect(() => { if (initialPrompt.trim()) setPrompt(initialPrompt); }, [initialPrompt]);
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => { if (initialPrompt.trim()) setPrompt(initialPrompt); }, [initialPrompt]);
 
   async function generate() {
     if (!prompt.trim()) { setStatus('Describe what you want to create first.'); return; }
