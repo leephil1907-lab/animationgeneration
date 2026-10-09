@@ -33,7 +33,7 @@ export default function ComfyEndpointStatus() {
   useEffect(() => { void check(); }, [check]);
 
   const address = state.host
-    ? \`\${state.secure ? 'https' : 'http'}://\${state.host}\${state.port && !['80','443'].includes(state.port) ? \`:\${state.port}\` : ''}\`
+    ? `${state.secure ? 'https' : 'http'}://${state.host}${state.port && !['80','443'].includes(state.port) ? `:${state.port}` : ''}`
     : 'Not configured';
 
   return (
@@ -43,7 +43,7 @@ export default function ComfyEndpointStatus() {
       </div>
       <div className="comfyEndpointCopy">
         <strong>{state.connected ? 'ComfyUI endpoint connected' : 'ComfyUI endpoint not connected'}</strong>
-        <span>{checking ? 'Checking the server…' : state.connected ? address : state.configured ? \`\${address} · \${state.error || 'connection failed'}\` : 'Set COMFYUI_URL on the MOTIONA server.'}</span>
+        <span>{checking ? 'Checking the server…' : state.connected ? address : state.configured ? `${address} · ${state.error || 'connection failed'}` : 'Set COMFYUI_URL on the MOTIONA server.'}</span>
         {state.connected && <small>{state.mock ? 'Development test worker detected.' : 'Real ComfyUI server detected.'}</small>}
       </div>
       <button type="button" className="textBtn" onClick={() => void check()} disabled={checking} title="Check ComfyUI endpoint">
