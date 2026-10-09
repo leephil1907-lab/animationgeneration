@@ -127,7 +127,16 @@ export default function ConversationHome(){
 
       <div className="conversationBody">
         <div className="conversationMessages">
-          {messages.length===0?<div className="conversationWelcome"><CharacterVisual character={selected} className={characterStyles.visualWelcome}/><span className="welcomeEyebrow">MOTIONA CHARACTER</span><h1>Talk to {selected.name}.</h1><p>{greeting}</p><div className="starterGrid">{starters.map(s=><button key={s} onClick={()=>send(s)}>{s}<ArrowUpRight size={13}/></button>)}</div></div>:<>
+          {messages.length===0?<div className="conversationWelcome"><CharacterVisual character={selected} className={characterStyles.visualWelcome}/><span className="welcomeEyebrow">MOTIONA CHARACTER</span><h1>Talk to {selected.name}.</h1><p>{greeting}</p><div className="starterGrid">{starters.map(s=><button key={s} onClick={()=>send(s)}>{s}<ArrowUpRight size={13}/></button>)}</div>
+          <div className="agentStudioRail">
+            <div className="agentStudioHead"><span>CREATIVE AGENT / MOTIONA</span><b>One direction. Every frame.</b><small>Your character, visual style and story context stay connected as you move from idea to image, motion and film.</small></div>
+            <div className="agentStudioSteps">
+              <button onClick={()=>send("Act as my creative director. Ask one useful question if needed, then turn my idea into a clear visual brief with subject, mood, palette, lighting and continuity rules.")}><i>01</i><span><b>Creative direction</b><small>Shape the brief</small></span><ArrowUpRight size={14}/></button>
+              <button onClick={()=>createFromConversation("image")}><i>02</i><span><b>Image lab</b><small>Build the keyframe</small></span><ArrowUpRight size={14}/></button>
+              <button onClick={()=>createFromConversation("video")}><i>03</i><span><b>Motion director</b><small>Animate the moment</small></span><ArrowUpRight size={14}/></button>
+            </div>
+            <div className="agentStudioFoot"><span><Sparkles size={12}/> SHARED CREATIVE CONTEXT</span><span>CONVERSE <i/> CREATE <i/> DIRECT</span></div>
+          </div></div>:<>
             <div className="conversationIntro"><span>{selected.name}</span><small>Private conversation · saved locally</small></div>
             {messages.map((m,i)=><div key={i} className={m.role==='user'?'bubbleRow user':'bubbleRow'}><div className={m.role==='assistant'?'chatAvatar':'userAvatar'}>{m.role==='assistant'?selected.initials:'You'}</div><div className="bubble"><p>{m.content}</p></div></div>)}
             {busy&&<div className="bubbleRow"><div className="chatAvatar">{selected.initials}</div><div className="bubble typing"><i/><i/><i/></div></div>}
