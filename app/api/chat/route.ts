@@ -49,7 +49,8 @@ export async function POST(req:NextRequest){
     if(!message)return NextResponse.json({error:'message is required'},{status:400});
     const moderation=moderatePrompt(message);
     if(!moderation.allowed)return NextResponse.json({error:moderation.reason,blocked:true,level:moderation.level},{status:422});
-    const character=characters[String(body?.characterId)]||characters['aiko-ren'];
+    const characterId=characters[String(body?.characterId)]?String(body.characterId):'aiko-ren';
+    const character=characters[characterId];
     const history=Array.isArray(body?.history)
       ?body.history.filter((m:any)=>m&&(['user','assistant'] as string[]).includes(m.role)&&typeof m.content==='string').slice(-16).map((m:any)=>({role:m.role,content:m.content.slice(0,6000)}))
       :[{role:'user' as const,content:message}];
@@ -62,7 +63,7 @@ export async function POST(req:NextRequest){
       const last=toolCalls[toolCalls.length-1];last.result=result.result;last.status=result.status;
     }
 
-    const memory=await readRecord<any>('character-memory',character.id).catch(()=>null);
+    const memory=await readRecord<any>('character-memory',characterId).catch(()=>null);
     const memoryHistory=Array.isArray(memory?.recentMessages)?memory.recentMessages.slice(-6):[];
     const reply=await characterReply(character,[...memoryHistory,...history].slice(-16));
     const content=reply||(toolCalls.length
