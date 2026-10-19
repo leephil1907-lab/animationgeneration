@@ -80,7 +80,7 @@ export default function ConversationHome(){
       const data=await r.json();
       if(!r.ok)throw new Error(data?.error||'Conversation failed.');
       const content=String(data.message?.content||data.reply||'').trim();
-      const complete=[...next,{role:'assistant',content}];
+      const complete:ChatMessage[]=[...next,{role:'assistant',content}];
       setMessages(complete);
       void persistMemory(complete);
     }catch(e){setNotice(e instanceof Error?e.message:'Conversation failed.');}
