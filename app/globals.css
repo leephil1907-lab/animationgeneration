@@ -748,3 +748,85 @@ a:hover,button:hover{filter:brightness(1.08)}
 .agentStudioFoot svg{color:#ff7ab8}
 .agentStudioFoot i{display:inline-block;width:3px;height:3px;border-radius:50%;background:#ff6bad;margin:0 2px}
 @media(max-width:720px){.agentStudioRail{margin-top:20px;border-radius:12px}.agentStudioHead{padding:15px 14px 12px}.agentStudioHead>b{font-size:18px}.agentStudioSteps{grid-template-columns:1fr;padding:0 9px 9px}.agentStudioSteps button{grid-template-columns:23px 1fr 13px;padding:10px}.agentStudioFoot{align-items:flex-start;flex-direction:column;padding:9px 13px}.conversationWelcome{padding-bottom:18px}}
+
+
+/* MOTIONA design system — charcoal, electric lime, accessible theme switching */
+:root{color-scheme:dark;--motion-bg:#101310;--motion-panel:#171B16;--motion-panel-2:#1D231B;--motion-line:#30382F;--motion-text:#F5F6F0;--motion-muted:#A2AB9D;--motion-accent:#D6F269;--motion-accent-ink:#101310;--motion-shadow:rgba(0,0,0,.24)}
+html[data-theme="dark"]{color-scheme:dark;--motion-bg:#101310;--motion-panel:#171B16;--motion-panel-2:#1D231B;--motion-line:#30382F;--motion-text:#F5F6F0;--motion-muted:#A2AB9D;--motion-accent:#D6F269;--motion-accent-ink:#101310;--motion-shadow:rgba(0,0,0,.24)}
+html[data-theme="light"]{color-scheme:light;--motion-bg:#F5F6F0;--motion-panel:#FFFFFF;--motion-panel-2:#ECEFE5;--motion-line:#D9DFD1;--motion-text:#171B15;--motion-muted:#5F685A;--motion-accent:#647D16;--motion-accent-ink:#FFFFFF;--motion-shadow:rgba(33,45,25,.08)}
+html,body{background:var(--motion-bg)!important;color:var(--motion-text);transition:background-color .22s ease,color .22s ease}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{background-color:var(--motion-bg)}
+.conversationApp{background:var(--motion-bg)!important;color:var(--motion-text)!important;isolation:isolate}
+.conversationApp:before,.conversationApp:after{pointer-events:none}
+.motionaAtmosphere span{background:radial-gradient(circle,var(--motion-accent),transparent 70%);opacity:.055}
+.conversationSidebar,.conversationInspector{background:var(--motion-panel)!important;border-color:var(--motion-line)!important;color:var(--motion-text)}
+.conversationMain{background:var(--motion-bg)!important;color:var(--motion-text)}
+.conversationTop{background:color-mix(in srgb,var(--motion-bg) 88%,transparent)!important;border-color:var(--motion-line)!important;backdrop-filter:blur(20px)}
+.conversationBrand a{color:var(--motion-text)!important;text-decoration:none;display:flex;align-items:center;gap:10px}
+.conversationBrand b{letter-spacing:.16em;font-size:13px}
+.conversationBrand b span{color:var(--motion-accent)!important}
+.conversationAge{border-color:var(--motion-line)!important;color:var(--motion-muted)!important}
+.conversationSideLabel,.inspectorTitle,.quickCreate>span,.welcomeEyebrow,.discoveryEyebrow{color:var(--motion-accent)!important;letter-spacing:.16em}
+.conversationNew,.conversationSideLinks a,.characterItem,.conversationHistory button,.conversationTopActions button,.composerTools button,.starterGrid button,.agentStudioSteps button,.quickCreate button{border-color:var(--motion-line)!important}
+.conversationNew{background:var(--motion-accent)!important;color:var(--motion-accent-ink)!important;font-weight:700;border-color:var(--motion-accent)!important;border-radius:10px}
+.conversationNew svg,.conversationNew:hover svg{color:var(--motion-accent-ink)!important}
+.conversationSideLinks a,.conversationHistory button,.characterItem,.conversationTopActions button,.composerTools button{color:var(--motion-muted)!important}
+.characterItem.active,.characterItem:hover,.conversationHistory button:hover,.conversationSideLinks a:hover{background:var(--motion-panel-2)!important;color:var(--motion-text)!important;border-color:var(--motion-line)!important}
+.conversationTopActions button:hover,.composerTools button:hover,.starterGrid button:hover,.agentStudioSteps button:hover,.quickCreate button:hover{border-color:var(--motion-accent)!important;color:var(--motion-accent)!important}
+.conversationCharacter b,.characterCard b,.quickCreate button b,.agentStudioHead>b{color:var(--motion-text)!important}
+.conversationCharacter span,.conversationCharacter small,.characterCard small,.characterCard p,.creationNote p,.conversationWelcome p,.discoveryHeader p,.composerFoot,.conversationIntro small{color:var(--motion-muted)!important}
+.onlineDot{background:var(--motion-accent)!important;box-shadow:0 0 12px color-mix(in srgb,var(--motion-accent) 50%,transparent)!important}
+.conversationWelcome h1,.discoveryHeader h2{color:var(--motion-text)!important}
+.conversationWelcome h1{letter-spacing:-.055em}
+.conversationWelcome h1:after{content:"";display:block;width:56px;height:4px;background:var(--motion-accent);border-radius:4px;margin-top:17px}
+.starterGrid button{background:var(--motion-panel)!important;color:var(--motion-muted)!important;border:1px solid var(--motion-line)!important;border-radius:10px}
+.starterGrid button svg,.conversationTopActions button svg,.composerTools button svg,.quickCreate button>svg:last-child{color:var(--motion-accent)!important}
+.agentStudioRail{border-color:var(--motion-line)!important;background:linear-gradient(135deg,var(--motion-panel-2),var(--motion-panel))!important;box-shadow:0 24px 70px var(--motion-shadow)!important}
+.agentStudioRail:before{background:radial-gradient(ellipse at 4% 0%,color-mix(in srgb,var(--motion-accent) 12%,transparent),transparent 42%)!important}
+.agentStudioHead>span,.agentStudioSteps button>i,.agentStudioFoot span:first-child{color:var(--motion-accent)!important}
+.agentStudioSteps button{background:var(--motion-panel)!important;border-color:var(--motion-line)!important}
+.agentStudioSteps button b{color:var(--motion-text)!important}
+.agentStudioSteps button small,.agentStudioHead>small,.agentStudioFoot{color:var(--motion-muted)!important}
+.agentStudioSteps button>svg,.agentStudioFoot svg{color:var(--motion-accent)!important}
+.conversationComposerWrap{background:var(--motion-bg)!important;border-color:var(--motion-line)!important}
+.conversationComposer{background:var(--motion-panel)!important;border:1px solid var(--motion-line)!important;border-radius:14px}
+.conversationComposer textarea{background:transparent!important;color:var(--motion-text)!important}
+.conversationComposer textarea::placeholder{color:var(--motion-muted)!important}
+.conversationComposer .send,.primary,.engineAction .primary{background:var(--motion-accent)!important;color:var(--motion-accent-ink)!important;border-color:var(--motion-accent)!important;box-shadow:0 8px 26px color-mix(in srgb,var(--motion-accent) 14%,transparent)!important}
+.conversationComposer .mic{color:var(--motion-muted)!important}
+.bubble,.conversationNotice{background:var(--motion-panel)!important;border-color:var(--motion-line)!important;color:var(--motion-text)!important}
+.bubble p{color:var(--motion-text)!important}
+.userAvatar,.chatAvatar{border-color:var(--motion-line)!important}
+.inspectorTitle{border-color:var(--motion-line)!important}
+.characterCard,.quickCreate button,.creationNote{background:var(--motion-panel-2)!important;border-color:var(--motion-line)!important}
+.creationNote>svg{color:var(--motion-accent)!important}
+.discoveryHeader a,.composerFoot a{color:var(--motion-accent)!important}
+.motionaFlow{border-color:var(--motion-line)!important}
+.motionaFlow>div span,.motionaFlow>div b{color:var(--motion-accent)!important}
+.productPage,.productWrap,.productHeader,.workspace,.gallery,.chatWorkspace{color:var(--motion-text)}
+.productPage{background:var(--motion-bg)!important}
+.productHeader{background:var(--motion-panel)!important;border-color:var(--motion-line)!important}
+.productHeader a,.productHeader strong{color:var(--motion-text)!important}
+.productWrap .panel,.panel,.chatSidebar,.chatMain,.workflowUpload,.jobState,.outputCard,.outputWrap,.empty,.worker,.storageNote{background:var(--motion-panel)!important;border-color:var(--motion-line)!important;color:var(--motion-text)!important}
+.productIntro h1,.productIntro h2,.panel h1,.panel h2,.panel h3,.gallery h1,.productWrap h1,.productWrap h2{color:var(--motion-text)!important}
+.productIntro p:not(.eyebrow),.panel p,.workflowUpload p,.storageNote,.worker span{color:var(--motion-muted)!important}
+.fields input,.fields select,.fields textarea,.generatePanel select,.generatePanel textarea,.controlsGrid input,.controlsGrid select,.controlsGrid textarea,.enginePrompt,.engineControls select{background:var(--motion-bg)!important;border-color:var(--motion-line)!important;color:var(--motion-text)!important}
+.secondary,.actionbar .secondary{background:var(--motion-panel-2)!important;border-color:var(--motion-line)!important;color:var(--motion-text)!important}
+.eyebrow,.discoveryEyebrow,.cloudEngineCard .eyebrow{color:var(--motion-accent)!important}
+.cloudEngineCard{background:radial-gradient(circle at 85% 5%,color-mix(in srgb,var(--motion-accent) 12%,transparent),transparent 32%),linear-gradient(135deg,var(--motion-panel),var(--motion-bg))!important;border-color:var(--motion-line)!important}
+.cloudEngineHead h2,.cloudEngineHead h1{color:var(--motion-text)!important}
+.enginePill,.engineModes button{border-color:var(--motion-line)!important;color:var(--motion-muted)!important;background:var(--motion-panel)!important}
+.engineModes button.active{background:var(--motion-accent)!important;color:var(--motion-accent-ink)!important;border-color:var(--motion-accent)!important}
+.enginePill i{background:var(--motion-accent)!important;box-shadow:0 0 12px var(--motion-accent)!important}
+footer{border-color:var(--motion-line)!important;color:var(--motion-muted)!important}
+.themeToggle{position:fixed;right:18px;bottom:18px;z-index:1000;display:inline-flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid var(--motion-line);border-radius:999px;background:var(--motion-panel);color:var(--motion-text);box-shadow:0 10px 35px var(--motion-shadow);font-size:11px;font-weight:650;transition:transform .2s ease,border-color .2s ease,background .2s ease}
+.themeToggle svg{color:var(--motion-accent)}
+.themeToggle:hover{transform:translateY(-2px);border-color:var(--motion-accent)}
+.themeToggle:focus-visible{outline:2px solid var(--motion-accent);outline-offset:3px}
+html[data-theme="light"] .conversationWelcome h1,html[data-theme="light"] .discoveryHeader h2{color:var(--motion-text)!important}
+html[data-theme="light"] .conversationComposerWrap{background:var(--motion-bg)!important}
+html[data-theme="light"] .conversationTop{background:color-mix(in srgb,var(--motion-bg) 90%,transparent)!important}
+html[data-theme="light"] .cloudEngineHead p:not(.eyebrow){color:var(--motion-muted)!important}
+@media(max-width:700px){.themeToggle{right:12px;bottom:12px;padding:10px;border-radius:50%;width:42px;height:42px;justify-content:center}.themeToggle span{display:none}.conversationApp{padding-bottom:18px}}
+@media(prefers-reduced-motion:reduce){.themeToggle,.conversationApp,.conversationTop{transition:none!important}}
