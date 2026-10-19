@@ -1,16 +1,18 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import AgeGate from '@/components/AgeGate';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export const metadata: Metadata = {
   title: 'MOTIONA Studio — AI Character & Animation Workspace',
   description:
-    'MOTIONA Studio is a local-first AI character and animation workspace: design consistent characters, direct storyboarded shots with locked seeds, and render animation through your own ComfyUI installation. Outputs stay on your machine. 18+ creative workspace.',
+    'MOTIONA is a creative workspace for developing characters, shaping storyboards and directing AI-assisted animation with a connected creative workflow.',
   applicationName: 'MOTIONA Studio',
+  themeColor: '#101310',
   openGraph: {
     title: 'MOTIONA Studio',
     description:
-      'Local-first AI character and animation workspace. Consistent characters, storyboarded shots, and ComfyUI-powered rendering — private by design.',
+      'Shape the idea, build the keyframe and direct the motion in one connected creative workspace.',
     siteName: 'MOTIONA Studio',
     type: 'website',
   },
@@ -21,5 +23,18 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><head><link rel="icon" href="/icon.svg" type="image/svg+xml"/><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/><link rel="manifest" href="/manifest.webmanifest"/></head><body><AgeGate>{children}</AgeGate></body></html>;
+  return (
+    <html lang="en" data-theme="dark">
+      <head>
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#101310" />
+      </head>
+      <body>
+        <AgeGate>{children}</AgeGate>
+        <ThemeToggle />
+      </body>
+    </html>
+  );
 }
