@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   description:
     'MOTIONA is a creative workspace for developing characters, shaping storyboards and directing AI-assisted animation with a connected creative workflow.',
   applicationName: 'MOTIONA Studio',
-  themeColor: '#101310',
   openGraph: {
     title: 'MOTIONA Studio',
     description:
@@ -17,8 +16,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   icons: {
-    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }, { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' }],
-    apple: ['/icons/apple-touch-icon.png'],
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
   },
 };
 
@@ -27,7 +25,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" data-theme="dark">
       <head>
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="theme-color" content="#101310" />
       </head>
