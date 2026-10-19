@@ -1,23 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MOTIONA Studio app icon">
-  <defs>
-    <linearGradient id="maBg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#241b36"/>
-      <stop offset="1" stop-color="#0b0a10"/>
-    </linearGradient>
-    <radialGradient id="maGlow" cx="0.68" cy="0.36" r="0.62">
-      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.5"/>
-      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="maPlay" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#a78bfa"/>
-      <stop offset="1" stop-color="#7c3aed"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#maBg)"/>
-  <rect width="512" height="512" rx="112" fill="url(#maGlow)"/>
-  <!-- M monogram: two keyframe peaks -->
-  <path d="M118 356V156h68l70 118 70-118h68v200h-64V257l-74 121h-2l-74-121v99z" fill="#ffffff"/>
-      <circle cx="350" cy="190" r="62" fill="none" stroke="#8b5cf6" stroke-opacity="0.5" stroke-width="8"/>
-  <!-- play triangle seated in the right peak, ringed like a record head -->
-  <path d="M306 156h88l-44 76z" fill="url(#maPlay)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MOTIONA app icon">
+  <rect width="512" height="512" rx="112" fill="#101310"/>
+  <rect x="18" y="18" width="476" height="476" rx="100" fill="none" stroke="#30382F" stroke-width="4"/>
+  <path d="M104 366V146h56l96 126 96-126h56v220h-68V250l-82 108-82-108v116z" fill="#D6F269" stroke="#D6F269" stroke-linejoin="round"/>
+  <path d="M198 94h116l-58 60z" fill="#F5F6F0"/>
+  <circle cx="388" cy="114" r="10" fill="#D6F269"/>
 </svg>
