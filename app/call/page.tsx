@@ -50,7 +50,7 @@ export default function CallPage(){
     const text=message.trim(); if(!text||busy)return;
     setMessage('');setMessages(m=>[...m,{role:'you',text}]);setBusy(true);
     try{
-      const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversationId:crypto.randomUUID(),message:text,characterId:'aiko-ren',history:[...messages,{role:'user',content:text}].map(x=>({role:x.role==='you'?'user':'assistant',content:x.text}))})});
+      const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversationId:crypto.randomUUID(),message:text,characterId:'aiko-ren',history:[...messages.map(x=>({role:x.role==='you'?'user':'assistant',content:x.text})),{role:'user',content:text}]})});
       const d=await r.json(); if(!r.ok)throw new Error(d?.error||'Conversation failed.');
       const reply=String(d.message?.content||d.reply||'I’m here. Tell me what you want to create.');
       setMessages(m=>{const next=[...m,{role:'aiko' as const,text:reply}]; void fetch('/api/memory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({characterId:'aiko-ren',characterName:character.name,messages:next.map(x=>({role:x.role==='you'?'user':'assistant',content:x.text}))})}).catch(()=>{}); return next;});
