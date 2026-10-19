@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import BrandMark from '@/components/BrandMark';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, Clapperboard, Film, Image as ImageIcon, Mic, MoreHorizontal, Plus, Search, Send, Sparkles, Video, Wand2, Square } from 'lucide-react';
 import characterStyles from './CharacterDiscovery.module.css';
@@ -16,9 +17,9 @@ type ChatMessage={role:'user'|'assistant';content:string};
 type SavedConversation={id:string;characterId:string;title:string;messages:ChatMessage[];updatedAt:string};
 
 const characters:Character[]=[
-  {id:'aiko-ren',name:'Aiko Ren',tagline:'Cyberpunk wanderer',style:'Neon noir',initials:'AR',accent:'#ff4fa3',signal:'#63e6ff',visual:'NEON / NIGHT'},
-  {id:'mara-vale',name:'Mara Vale',tagline:'Cinematic detective',style:'Neo-noir',initials:'MV',accent:'#9b7cff',signal:'#ffd1e8',visual:'NOIR / RAIN'},
-  {id:'nova-9',name:'Nova 9',tagline:'Synthetic performer',style:'Futurist',initials:'N9',accent:'#63e6ff',signal:'#ff4fa3',visual:'SYNTH / LIGHT'},
+  {id:'aiko-ren',name:'Aiko Ren',tagline:'Cyberpunk wanderer',style:'Neon noir',initials:'AR',accent:'#D6F269',signal:'#B8D96A',visual:'NEON / NIGHT'},
+  {id:'mara-vale',name:'Mara Vale',tagline:'Cinematic detective',style:'Neo-noir',initials:'MV',accent:'#9C9AE8',signal:'#D6F269',visual:'NOIR / RAIN'},
+  {id:'nova-9',name:'Nova 9',tagline:'Synthetic performer',style:'Futurist',initials:'N9',accent:'#80CFC5',signal:'#D6F269',visual:'SYNTH / LIGHT'},
 ];
 const starters=['Help me design her next scene','Create a cinematic portrait concept','Build a 30-second video sequence','Give me three outfit directions'];
 const STORAGE='motiona-conversations';
@@ -113,7 +114,7 @@ export default function ConversationHome(){
     <div className="motionaAtmosphere" aria-hidden="true"><span/><span/><span/></div>
     <aside className="conversationSidebar">
       <nav className="mobilePrimaryNav" aria-label="Primary"><Link href="/">Discover</Link><Link href="/studio">Create</Link><Link href="/call">Live Call</Link><Link href="/animate">Animate</Link><Link href="/gallery">Library</Link></nav>
-      <div className="conversationBrand"><Link href="/"><span className="conversationMark">M</span><b>MOTION<span>A</span></b></Link><span className="conversationAge">18+</span></div>
+      <div className="conversationBrand"><Link href="/"><BrandMark size={34} /><b>MOTION<span>A</span></b></Link><span className="conversationAge">18+</span></div>
       <button className="conversationNew" onClick={newConversation}><Plus size={15}/> New conversation</button>
       <div className="conversationSideLabel">CHARACTERS</div>
       <div className="characterList">{characters.map(c=><button key={c.id} className={c.id===selected.id?'characterItem active':'characterItem'} onClick={()=>switchCharacter(c)}><CharacterVisual character={c} className={characterStyles.visualSidebar}/><span><b>{c.name}</b><small>{c.tagline}</small></span></button>)}</div>
