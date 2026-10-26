@@ -66,3 +66,10 @@ MOTIONA is the creative interface; **ComfyUI handles inference and rendering**.
 See `.env.example` for configuration. Animation requires the required workflows and models on the connected ComfyUI instance.
 
 **Safety:** use real-person references only with consent.
+
+## Real rendering versus the mock worker
+
+- Production image/video generation requires `COMFYUI_URL` to point to a reachable **real ComfyUI server** with the required checkpoints, custom nodes, and API-format workflow graphs installed.
+- `npm run dev:worker` starts a **synthetic test double only**. It is for local queue, polling, and gallery tests and must never be configured as the production renderer.
+- MOTIONA intentionally returns a clear service-unavailable error when the real renderer is not configured or cannot be reached. A successful website build does not mean a real AI render has been completed.
+- Before calling generation production-ready, run one real image job and one real video job end-to-end, confirm the output is playable, and verify that media access is authenticated and user-scoped.
