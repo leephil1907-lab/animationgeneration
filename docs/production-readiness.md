@@ -12,7 +12,7 @@ This checklist separates a successful web-app build from proof that a real media
 
 ## Release gates
 
-- [ ] Dependency installation, TypeScript check, and production build pass in CI.
+- [ ] Regenerate and commit `package-lock.json` locally so it pins the same Next.js version as `package.json` (the current lockfile pins Next.js 15.5.4 while `package.json` declares 15.5.27). CI currently regenerates a temporary lockfile before `npm ci`; this validates the declared dependency set but does not itself repair the committed lockfile.\n- [ ] Dependency installation, TypeScript check, and production build pass in CI.
 - [ ] Fix the browser UI test dependency: `scripts/ui-test.mjs` imports Puppeteer, but Puppeteer is not currently declared in `package.json` or `package-lock.json`. Do not run `npm run test:ui` until that is resolved.
 - [x] Production queue rejects a worker that identifies itself as mock; status endpoint marks mock as disconnected in production.\n- [ ] Verify the worker status endpoint reports a real worker, not a mock, in the actual deployment.
 - [ ] Confirm a real image job completes and its output can be opened in the authenticated gallery.
