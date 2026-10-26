@@ -18,15 +18,18 @@ export async function GET() {
 
   try {
     const system = await getSystemStats();
+    const mock = system?.mock === true;
+    const productionMock = process.env.NODE_ENV === 'production' && mock;
     return NextResponse.json({
       configured: Boolean(process.env.COMFYUI_URL),
-      connected: true,
+      connected: !productionMock,
       secure,
       host,
       port,
-      mock: Boolean(system?.mock),
+      mock,
+      ...(productionMock ? { error: 'Mock worker detected in production; generation is disabled.' } : {}),
       system,
-    });
+    }, productionMock ? { status: 503 } : undefined);
   } catch (error) {
     return NextResponse.json({
       configured: Boolean(process.env.COMFYUI_URL),

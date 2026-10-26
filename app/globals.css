@@ -830,3 +830,92 @@ html[data-theme="light"] .conversationTop{background:color-mix(in srgb,var(--mot
 html[data-theme="light"] .cloudEngineHead p:not(.eyebrow){color:var(--motion-muted)!important}
 @media(max-width:700px){.themeToggle{right:12px;bottom:12px;padding:10px;border-radius:50%;width:42px;height:42px;justify-content:center}.themeToggle span{display:none}.conversationApp{padding-bottom:18px}}
 @media(prefers-reduced-motion:reduce){.themeToggle,.conversationApp,.conversationTop{transition:none!important}}
+
+
+/* MOTIONA finishing pass: calmer, connected motion and consistent lime identity. */
+:root {
+  --motion-ease: cubic-bezier(.22, 1, .36, 1);
+  --motion-fast: 160ms;
+  --motion-medium: 260ms;
+}
+html { scroll-behavior: smooth; }
+body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+a, button, input, textarea, select, [role="button"] {
+  transition:
+    color var(--motion-medium, 260ms) var(--motion-ease, ease),
+    background-color var(--motion-medium, 260ms) var(--motion-ease, ease),
+    border-color var(--motion-medium, 260ms) var(--motion-ease, ease),
+    box-shadow var(--motion-medium, 260ms) var(--motion-ease, ease),
+    transform var(--motion-medium, 260ms) var(--motion-ease, ease),
+    opacity var(--motion-medium, 260ms) var(--motion-ease, ease);
+}
+button, [role="button"] { -webkit-tap-highlight-color: transparent; }
+button:active, [role="button"]:active { transform: scale(.985); }
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--motion-accent);
+  outline-offset: 3px;
+}
+.conversationSidebar, .conversationInspector, .panel, .outputCard, .characterCard,
+.quickCreate button, .starterGrid button, .agentStudioSteps button, .cloudEngineCard {
+  transition: border-color var(--motion-medium) var(--motion-ease),
+    background-color var(--motion-medium) var(--motion-ease),
+    box-shadow var(--motion-medium) var(--motion-ease),
+    transform var(--motion-medium) var(--motion-ease);
+}
+.starterGrid button:hover, .quickCreate button:hover, .characterCard:hover,
+.outputCard:hover, .agentStudioSteps button:hover {
+  transform: translateY(-2px);
+  border-color: var(--motion-accent) !important;
+  box-shadow: 0 14px 34px var(--motion-shadow);
+}
+.conversationComposer:focus-within {
+  border-color: var(--motion-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--motion-accent) 14%, transparent);
+}
+.conversationWelcome h1, .productIntro h1 {
+  text-wrap: balance;
+}
+.conversationWelcome p, .productIntro p, .panel p {
+  text-wrap: pretty;
+}
+.cloudEngineCard:before {
+  animation-duration: 12s;
+}
+.engineAction .primary:hover, .conversationComposer .send:hover, .conversationNew:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+}
+.themeToggle { backdrop-filter: blur(16px); }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
+/* Keep the visual language coherent: replace legacy pink/purple engine accents. */
+.cloudEngineCard .eyebrow,
+.agentStudioHead>span,
+.agentStudioSteps button>i,
+.agentStudioFoot span:first-child { color: var(--motion-accent) !important; }
+.enginePill i {
+  background: var(--motion-accent) !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--motion-accent) 50%, transparent) !important;
+}
+.enginePrompt:focus {
+  border-color: var(--motion-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--motion-accent) 12%, transparent) !important;
+}
+.engineAction .primary {
+  background: var(--motion-accent) !important;
+  color: var(--motion-accent-ink) !important;
+  border-color: var(--motion-accent) !important;
+}
+.agentStudioSteps button:hover {
+  border-color: var(--motion-accent) !important;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--motion-accent) 9%, transparent) !important;
+}
