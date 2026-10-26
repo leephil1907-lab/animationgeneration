@@ -58,6 +58,13 @@ type RequestOptions = {
 
 async function request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {}, timeoutMs = DEFAULT_TIMEOUT_MS, retries = DEFAULT_RETRIES } = options;
+  if (process.env.NODE_ENV === 'production' && !process.env.COMFYUI_URL) {
+    throw new ComfyUiError(
+      'Real rendering is not configured. Set COMFYUI_URL to a reachable ComfyUI server with the required models and workflows.',
+      503,
+    );
+  }
+
   const url = `${comfyBaseUrl()}${path}`;
 
   let lastError: unknown;
