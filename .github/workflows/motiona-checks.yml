@@ -28,7 +28,10 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install locked dependencies
+      - name: Regenerate lockfile from declared dependencies
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Install dependencies cleanly
         run: npm ci
 
       - name: Type-check
