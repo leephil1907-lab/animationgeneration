@@ -895,3 +895,27 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Keep the visual language coherent: replace legacy pink/purple engine accents. */
+.cloudEngineCard .eyebrow,
+.agentStudioHead>span,
+.agentStudioSteps button>i,
+.agentStudioFoot span:first-child { color: var(--motion-accent) !important; }
+.enginePill i {
+  background: var(--motion-accent) !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--motion-accent) 50%, transparent) !important;
+}
+.enginePrompt:focus {
+  border-color: var(--motion-accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--motion-accent) 12%, transparent) !important;
+}
+.engineAction .primary {
+  background: var(--motion-accent) !important;
+  color: var(--motion-accent-ink) !important;
+  border-color: var(--motion-accent) !important;
+}
+.agentStudioSteps button:hover {
+  border-color: var(--motion-accent) !important;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--motion-accent) 9%, transparent) !important;
+}
