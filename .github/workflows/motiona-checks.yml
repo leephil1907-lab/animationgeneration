@@ -1,0 +1,43 @@
+name: MOTIONA checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "chore/motiona-readiness-ci"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: motiona-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Build production app
+        run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_URL: https://example.invalid
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: ci-placeholder-key
+          MOTIONA_AUTH_REQUIRED: "false"
