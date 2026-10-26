@@ -39,7 +39,20 @@ export async function POST(req: Request) {
   if (denied) return denied;
   try {
     const user = await requireServerUser();
-    // Mock renders are synthetic test fixtures, never valid production output.\n    // Check the worker before accepting a generation request so a misconfigured\n    // production URL cannot silently serve mock videos to paying users.\n    if (process.env.NODE_ENV === 'production') {\n      const workerInfo = await getSystemStats();\n      if (workerInfo?.mock === true) {\n        return NextResponse.json(\n          { error: 'Mock rendering workers are disabled in production.', code: 'MOCK_WORKER_FORBIDDEN' },\n          { status: 503 },\n        );\n      }\n    }\n\n    const body = (await req.json()) as QueueBody;
+    // Mock renders are synthetic test fixtures, never valid production output.
+    // Check the worker before accepting a generation request so a misconfigured
+    // production URL cannot silently serve mock videos to paying users.
+    if (process.env.NODE_ENV === 'production') {
+      const workerInfo = await getSystemStats();
+      if (workerInfo?.mock === true) {
+        return NextResponse.json(
+          { error: 'Mock rendering workers are disabled in production.', code: 'MOCK_WORKER_FORBIDDEN' },
+          { status: 503 },
+        );
+      }
+    }
+
+    const body = (await req.json()) as QueueBody;
     const worker = String(body.worker || 'ComfyUI video worker').slice(0, 120);
 
     /* ---------------------------------------------------------- 1. prompt */
