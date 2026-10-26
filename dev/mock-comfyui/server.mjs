@@ -1,9 +1,9 @@
 /**
- * Mock ComfyUI worker — a test double for the real thing.
+ * MOCK ONLY — a synthetic test double, not an AI inference engine.\n * It creates deterministic placeholder animation to test queue/status/gallery plumbing.
  *
  * MOTIONA is a control surface: without a ComfyUI instance behind COMFYUI_URL
  * nothing can be verified end to end. This implements the subset of the ComfyUI
- * HTTP API that MOTIONA actually calls, and renders real video via render.py, so
+ * HTTP API that MOTIONA actually calls, and renders synthetic test video via render.py, so
  * queue -> poll -> history -> /view proxy -> gallery can be exercised for real.
  *
  * Endpoints implemented (matching comfyui/README.md and the route handlers):
@@ -306,7 +306,7 @@ const server = http.createServer(async (req, res) => {
       const ext = path.extname(file).toLowerCase();
       const contentType = { '.mp4': 'video/mp4', '.webm': 'video/webm', '.gif': 'image/gif', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' }[ext] || 'application/octet-stream';
 
-      res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'private, max-age=60' });
+      res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'private, max-age=60', 'X-MOTIONA-Worker': 'mock', 'X-MOTIONA-Synthetic-Media': 'true' });
       createReadStream(file).pipe(res);
       return;
     }
@@ -362,7 +362,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`[mock-comfyui] listening on http://${HOST}:${PORT}`);
-  console.log(`[mock-comfyui] outputs -> ${OUTPUT_DIR}`);
+  console.log(`[mock-comfyui] MOCK ONLY: synthetic placeholder media, not AI-generated output. outputs -> ${OUTPUT_DIR}`);
   console.log(`[mock-comfyui] queue delay ${QUEUE_DELAY_MS}ms, render delay ${RENDER_MS}ms`);
 });
 
