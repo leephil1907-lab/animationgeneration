@@ -33,7 +33,7 @@ export default function FilmmakingStudioPage() {
           <Link href="/storyboard">Storyboard</Link>
           <Link href="/gallery">Library</Link>
         </nav>
-        <Link href="/create" className={styles.headerAction}>New film <ArrowUpRight size={15} /></Link>
+        <Link href="/studio" className={styles.headerAction}>New film <ArrowUpRight size={15} /></Link>
       </header>
 
       <section className={styles.hero}>
@@ -42,7 +42,7 @@ export default function FilmmakingStudioPage() {
           <h1>From first idea<br /><em>to final frame.</em></h1>
           <p>Direct the story, build every shot, generate your footage and bring the whole film together in one connected studio.</p>
           <div className={styles.heroActions}>
-            <Link href="/create" className={styles.primary}><Sparkles size={16} /> Start creating <ArrowUpRight size={15} /></Link>
+            <Link href="/studio" className={styles.primary}><Sparkles size={16} /> Start creating <ArrowUpRight size={15} /></Link>
             <Link href="/storyboard" className={styles.secondary}><Clapperboard size={16} /> Open storyboard</Link>
           </div>
           <div className={styles.capabilities}>
@@ -69,7 +69,7 @@ export default function FilmmakingStudioPage() {
         <div className={styles.toolGrid}>
           {tools.map((tool, index) => {
             const Icon = tool.icon;
-            return <Link href={tool.href} className={styles.toolCard} key={tool.href}>
+            return <Link href={tool.href} className={styles.toolCard} key={`${tool.href}-${tool.title}`}>
               <div className={styles.toolTop}><span className={styles.toolIcon}><Icon size={19} /></span><span className={styles.toolIndex}>0{index + 1}</span></div>
               <div><span className={styles.toolTag}>{tool.tag}</span><h3>{tool.title}</h3><p>{tool.detail}</p></div>
               <span className={styles.toolArrow}><ArrowUpRight size={17} /></span>
@@ -95,7 +95,7 @@ export default function FilmmakingStudioPage() {
       <section className={styles.bottomCallout}>
         <div className={styles.calloutIcon}><Workflow size={22} /></div>
         <div><span className={styles.kicker}>YOUR PRODUCTION STARTS HERE</span><h2>Make the next frame count.</h2><p>Start with a visual idea. Build it into a sequence, then direct the result.</p></div>
-        <Link href="/create" className={styles.primary}>Create a film <Play size={14} /></Link>
+        <Link href="/studio" className={styles.primary}>Create a film <Play size={14} /></Link>
       </section>
 
       <footer className={styles.footer}>
