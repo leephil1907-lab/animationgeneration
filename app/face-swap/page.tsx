@@ -11,7 +11,39 @@ export default function FaceSwapPage(){
  const srcRef=useRef<HTMLInputElement>(null),refRef=useRef<HTMLInputElement>(null);
  useEffect(()=>{let active=true;fetch('/api/face-swap/status',{cache:'no-store'}).then(async response=>{const data=await response.json();if(active)setWorker({configured:Boolean(data.configured),available:Boolean(data.available),message:data.message||'Worker status unavailable.'})}).catch(()=>{if(active)setWorker({configured:false,available:false,message:'Could not check render worker status.'})});return()=>{active=false}},[]);
  const pick=(file:File|undefined,kind:'source'|'reference')=>{if(!file)return;const video=kind==='source'&&['video/mp4','video/webm','video/quicktime'].includes(file.type);const validImage=['image/jpeg','image/png','image/webp'].includes(file.type);if(!(validImage||video)){setError(kind==='source'?'Choose a JPEG, PNG, WebP, MP4, WebM or QuickTime file.':'Choose a JPEG, PNG or WebP portrait.');return}if(file.size>(video?250:12)*1024*1024){setError(video?'Video limit is 250 MB.':'Image limit is 12 MB.');return}setError('');const item={file,url:URL.createObjectURL(file)};if(kind==='source'){setSource(old=>{if(old)URL.revokeObjectURL(old.url);return item});setOutput(null)}else setReference(old=>{if(old)URL.revokeObjectURL(old.url);return item})};
- const run=async()=>{if(!source||!reference||busy)return;setBusy(true);setError('');setOutput(null);setStatus('Uploading media securely…');try{const data=new FormData();data.append('source',source.file);data.append('reference',reference.file);data.append('strength',strength);data.append('restore',String(restore));setStatus('Sending to the connected render worker…');const response=await fetch('/api/face-swap',{method:'POST',body:data});if(!response.ok){const result=await response.json().catch(()=>({}));throw new Error(result.error||'Face-swap render failed.')}const type=response.headers.get('content-type')||'';if(type.includes('application/json')){const result=await response.json();if(!result.outputUrl)throw new Error('Worker returned no output file.');setOutput(result.outputUrl);setOutputType(result.mediaType==='video'?'video':'image')}else{setOutput(URL.createObjectURL(await response.blob()));setOutputType(type.startsWith('video/')?'video':'image')}setStatus('Render complete. Review your result before downloading.')}catch(e){setError(e instanceof Error?e.message:'Face swap failed.');setStatus('The render did not complete.')}finally{setBusy(false)}};
+ const run=async()=>{
+  if(!source||!reference||busy)return;
+  setBusy(true);setError('');setOutput(null);setStatus('Uploading media securely…');
+  try{
+   const data=new FormData();data.append('source',source.file);data.append('reference',reference.file);data.append('strength',strength);data.append('restore',String(restore));
+   setStatus('Submitting render job to the GPU worker…');
+   const response=await fetch('/api/face-swap',{method:'POST',body:data});
+   if(!response.ok){const result=await response.json().catch(()=>({}));throw new Error(result.error||'Face-swap render failed.')}
+   const type=response.headers.get('content-type')||'';
+   if(type.includes('application/json')){
+    const result=await response.json();
+    if(result.outputUrl){setOutput(result.outputUrl);setOutputType(result.mediaType==='video'?'video':'image')}
+    else if(result.jobId){
+     setStatus('Render job queued. Waiting for the GPU worker…');
+     const started=Date.now();let finished=false;
+     while(Date.now()-started<20*60*1000){
+      await new Promise(resolve=>setTimeout(resolve,2500));
+      const check=await fetch('/api/face-swap/jobs/'+encodeURIComponent(result.jobId),{cache:'no-store'});
+      const state=await check.json().catch(()=>({}));
+      if(!check.ok)throw new Error(state.error||'Could not retrieve render status.');
+      if(state.status==='completed'&&state.outputUrl){setOutput(state.outputUrl);setOutputType(state.mediaType==='video'?'video':'image');finished=true;break}
+      if(state.status==='failed')throw new Error(state.error||'The GPU worker could not complete this render.');
+      setStatus(state.status==='running'?'GPU worker is processing your media…':'Render is queued. Waiting for an available worker…');
+     }
+     if(!finished)throw new Error('This render is taking longer than expected. Your job remains saved; try again shortly.');
+    }else throw new Error('Worker returned neither an output file nor a job id.');
+   }else{
+    setOutput(URL.createObjectURL(await response.blob()));setOutputType(type.startsWith('video/')?'video':'image');
+   }
+   setStatus('Render complete. Review your result before downloading.');
+  }catch(e){setError(e instanceof Error?e.message:'Face swap failed.');setStatus('The render did not complete.')}
+  finally{setBusy(false)}
+ };
  return <main className={styles.shell}><div className={styles.glow}/><header className={styles.header}><Link href="/filmmaking" className={styles.back}><ArrowLeft size={16}/> Filmmaking studio</Link><Link href="/" className={styles.brand}><b>M</b> MOTION<span>A</span></Link><div className={styles.headRight}><span><ShieldCheck size={13}/> PRIVATE WORKSPACE</span><Link href="/gallery">Library <ArrowUpRight size={14}/></Link></div></header>
  <section className={styles.intro}><motion.div initial={{opacity:0,y:14}} animate={{opacity:1,y:0}} transition={{duration:.5}}><div className={styles.eyebrow}>● IMAGE & VIDEO TOOL</div><h1>Face <em>Swap.</em></h1><p>Use one reference portrait to guide a face replacement in your source image or video. Upload, compare and render in one workspace.</p></motion.div><span className={styles.mode}><i className={worker.available?styles.workerReady:styles.workerOff}/>{worker.available?'RENDER WORKER ONLINE':worker.configured?'WORKER UNAVAILABLE':'WORKER NOT CONNECTED'}</span></section>
  <section className={styles.workbench}>
