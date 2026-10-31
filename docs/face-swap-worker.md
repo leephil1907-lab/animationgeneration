@@ -1,27 +1,56 @@
 # MOTIONA Face Swap worker contract
 
-## Render request
+MOTIONA runs inference on a separate GPU worker. The Next.js web process validates requests, authenticates the user, persists job ownership and proxies worker status. It does not run face-swap inference itself.
 
-The authenticated web route `POST /api/face-swap` accepts multipart fields:
+## Endpoints
 
+Configure `FACE_SWAP_API_URL` as the worker base URL and optionally `FACE_SWAP_API_KEY`. All worker requests carry `Authorization: Bearer <key>` when a key is configured. Production URLs must use HTTPS.
+
+### POST / (render submission)
+
+Multipart form fields:
 - `source`: JPEG, PNG, WebP, MP4, WebM or QuickTime media.
 - `reference`: JPEG, PNG or WebP portrait.
 - `strength`: `natural`, `balanced` or `strong`.
 - `restore`: `true` or `false`.
 
-Set `FACE_SWAP_API_URL` to the private worker's render endpoint and optionally `FACE_SWAP_API_KEY`. The web application forwards the multipart fields and sends the key as a Bearer token. The worker must validate all files independently and must never trust client-supplied MIME types or filenames.
+The worker must independently validate media contents, not just filenames or MIME types. It should return HTTP 202 and JSON:
 
-The worker returns either:
-1. Finished media as a binary response with an accurate `Content-Type`; or
-2. JSON with an `outputUrl` accessible to the signed-in browser and optional `mediaType`.
+```json
+{ "jobId": "worker-job-identifier", "status": "queued" }
+```
 
-The web application never fabricates a preview. If the worker is not configured, the render endpoint returns HTTP 503.
+For very short image jobs, it may return a completed result immediately:
 
-## Health check
+```json
+{ "outputUrl": "https://private-expiring-output-url", "mediaType": "image" }
+```
 
-The authenticated web route `GET /api/face-swap/status` checks `/health` relative to `FACE_SWAP_API_URL`, with a five-second timeout and the same optional Bearer key.
+MOTIONA persists its own opaque job ID and owner before returning HTTP 202 to the browser. The browser polls the authenticated MOTIONA job endpoint; it never calls the GPU worker directly.
 
-A healthy worker should return HTTP 200 and JSON similar to:
+### GET /jobs/{jobId} (job status)
+
+Return JSON with one of `queued`, `running`, `completed` or `failed`:
+
+```json
+{ "status": "running" }
+```
+
+On completion, return a private, expiring `outputUrl` and media type:
+
+```json
+{ "status": "completed", "outputUrl": "https://private-expiring-output-url", "mediaType": "video" }
+```
+
+On failure, return a short safe error:
+
+```json
+{ "status": "failed", "error": "The source video could not be decoded." }
+```
+
+### GET /health (worker readiness)
+
+Return HTTP 200 and JSON only when the worker can accept work:
 
 ```json
 {
@@ -32,10 +61,12 @@ A healthy worker should return HTTP 200 and JSON similar to:
 }
 ```
 
-The studio only reports the worker as online when the response confirms readiness with `status: "ok"` or `ok: true`. A configured URL alone is not treated as a healthy worker.
+The studio marks the worker online only when it confirms readiness. A configured URL alone is never treated as a healthy worker.
 
 ## Production requirements
 
-Use a properly licensed face-processing stack and verify model-weight licensing separately from source-code licensing. Run inference on a GPU worker, not in the Next.js web process. The worker must enforce file size, duration, resolution, codec, concurrency and time limits; authenticate requests; clean up temporary files; and return private, expiring output URLs.
+Use a properly licensed face-processing stack and verify model-weight licensing separately from source-code licensing. Run inference on a GPU worker, not in the Next.js process. Enforce media size, duration, resolution, codec, concurrency and time limits; authenticate requests; clean temporary files; and return private, expiring output URLs.
 
-The current web adapter is synchronous and intended for still images and short validation clips. Production-length video should use a durable asynchronous queue: submit a job, return a job ID, poll authenticated status, and store output in object storage. Do not report a completed render until the actual output has been persisted and verified.
+MOTIONA currently stores render job ownership and status in the existing persistent record store. In production this requires the configured Supabase-backed storage and existing row-level security policies. The browser polls for up to 20 minutes per active session; job records remain persisted if the browser closes.
+
+The worker must keep its own durable queue and job state so a worker restart does not lose accepted jobs. Do not report a completed render until the output has been persisted and verified.
