@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  ArrowUpRight, Clapperboard, Film, Images, Play, Sparkles, WandSparkles, Workflow,
+  ArrowUpRight, Clapperboard, Film, Images, Play, Sparkles, WandSparkles, Workflow, ScanFace,
 } from 'lucide-react';
 import styles from './filmmaking.module.css';
 
@@ -8,6 +8,7 @@ const tools = [
   { href: '/animate', icon: WandSparkles, title: 'AI video generation', detail: 'Turn a prompt or reference image into a moving shot.', tag: 'TEXT · IMAGE · VIDEO' },
   { href: '/storyboard', icon: Clapperboard, title: 'Storyboard & scenes', detail: 'Plan sequences, shots, camera direction and continuity.', tag: 'PRE-PRODUCTION' },
   { href: '/animate', icon: Film, title: 'Animation engine', detail: 'Send prepared shots to the connected generation engine.', tag: 'COMFYUI WORKFLOWS' },
+  { href: '/face-swap', icon: ScanFace, title: 'Face swap studio', detail: 'Use one portrait reference to transform a face in an image or video.', tag: 'REFERENCE-LED EDITING' },
   { href: '/gallery', icon: Images, title: 'Media library', detail: 'Review generated images, clips and completed jobs.', tag: 'YOUR OUTPUTS' },
 ];
 
@@ -30,6 +31,7 @@ export default function FilmmakingStudioPage() {
         <nav className={styles.nav} aria-label="Studio navigation">
           <Link className={styles.navActive} href="/filmmaking">Overview</Link>
           <Link href="/animate">Generate</Link>
+          <Link href="/face-swap">Face Swap</Link>
           <Link href="/storyboard">Storyboard</Link>
           <Link href="/gallery">Library</Link>
         </nav>
